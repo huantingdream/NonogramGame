@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#143fbf" />
+    <meta
+      name="description"
+      content="一个简单易懂、可自动生成题目的 Nonogram 数织小游戏。"
+    />
+    <title>格间 · Nonogram</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="格间 Nonogram 首页">
+          <span class="brand-mark" aria-hidden="true">
+            <i></i><i></i><i></i><i></i>
+          </span>
+          <span><strong>格间</strong><small>NONOGRAM</small></span>
+        </a>
+        <button class="how-to-button" id="howToButton" type="button" aria-expanded="false">
+          <span aria-hidden="true">?</span> 怎么玩
+        </button>
+      </header>
+
+      <section class="game-layout" aria-label="Nonogram 游戏">
+        <aside class="control-panel">
+          <div class="eyebrow"><span></span> PUZZLE SETUP</div>
+          <h1>今天，拼出<br /><em>什么图案？</em></h1>
+
+          <div class="field-group">
+            <div class="field-label"><span>难度</span><output id="difficultyDescription">适合热身，赠送 3 格提示</output></div>
+            <div class="segmented" id="difficultyPicker" role="radiogroup" aria-label="选择难度">
+              <button type="button" role="radio" aria-checked="true" data-difficulty="easy">简单</button>
+              <button type="button" role="radio" aria-checked="false" data-difficulty="normal">普通</button>
+              <button type="button" role="radio" aria-checked="false" data-difficulty="hard">困难</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label"><span>棋盘大小</span><output id="sizeDescription">5 × 5 · 快速一局</output></div>
+            <div class="segmented" id="sizePicker" role="radiogroup" aria-label="选择棋盘大小">
+              <button type="button" role="radio" aria-checked="true" data-size="5">5×5</button>
+              <button type="button" role="radio" aria-checked="false" data-size="10">10×10</button>
+              <button type="button" role="radio" aria-checked="false" data-size="15">15×15</button>
+            </div>
+          </div>
+
+          <button class="primary-button" id="newGameButton" type="button">
+            <span class="button-icon" aria-hidden="true">↻</span>
+            生成新题目
+          </button>
+
+          <div class="mini-guide">
+            <span class="guide-icon" aria-hidden="true">✦</span>
+            <p><strong>数字是连续方格的数量。</strong><br />把每行、每列都正确填满，就完成啦。</p>
+          </div>
+        </aside>
+
+        <section class="board-card">
+          <div class="board-header">
+            <div>
+              <span class="puzzle-number" id="puzzleNumber">PUZZLE #0000</span>
+              <h2 id="boardTitle">5 × 5 · 简单</h2>
+            </div>
+            <div class="status-cluster" aria-label="游戏状态">
+              <div><span>用时</span><strong id="timer">00:00</strong></div>
+              <div><span>错误</span><strong><b id="mistakes">0</b><small id="mistakeLimit"> / 3</small></strong></div>
+            </div>
+          </div>
+
+          <div class="board-stage">
+            <div class="board-scroll">
+              <div class="puzzle-grid" id="puzzleGrid" aria-label="Nonogram 棋盘"></div>
+            </div>
+          </div>
+
+          <div class="board-toolbar">
+            <div class="tool-switch" role="radiogroup" aria-label="落子方式">
+              <button type="button" role="radio" aria-checked="true" data-tool="fill">
+                <span class="fill-swatch" aria-hidden="true"></span> 填色
+              </button>
+              <button type="button" role="radio" aria-checked="false" data-tool="cross">
+                <span class="cross-swatch" aria-hidden="true">×</span> 标记空格
+              </button>
+            </div>
+            <button class="text-button" id="clearButton" type="button">清空棋盘</button>
+          </div>
+          <p class="desktop-tip">左键填色 · 右键打叉 · 按住并拖动可连续操作</p>
+        </section>
+      </section>
+    </main>
+
+    <dialog class="modal" id="howToModal">
+      <button class="modal-close" type="button" data-close-modal aria-label="关闭">×</button>
+      <span class="modal-kicker">HOW TO PLAY</span>
+      <h2>看数字，填方格</h2>
+      <div class="example-row" aria-hidden="true">
+        <strong>2 1</strong>
+        <span class="demo-cell filled"></span><span class="demo-cell filled"></span><span class="demo-cell crossed">×</span><span class="demo-cell filled"></span><span class="demo-cell crossed">×</span>
+      </div>
+      <p>每个数字代表一组连续填色格。多组数字之间，至少隔一个空格。</p>
+      <p>选择“填色”画出图案；确定某格为空时，用“×”标记。所有填色格正确后即可完成。</p>
+      <button class="primary-button" type="button" data-close-modal>开始游戏</button>
+    </dialog>
+
+    <dialog class="modal victory-modal" id="victoryModal">
+      <div class="victory-badge" aria-hidden="true">✓</div>
+      <span class="modal-kicker">PUZZLE COMPLETE</span>
+      <h2>图案完成！</h2>
+      <p id="victorySummary">你用 00:00 完成了这道题。</p>
+      <button class="primary-button" id="nextPuzzleButton" type="button">再来一题</button>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./app.js"></script>
+  </body>
+</html>
