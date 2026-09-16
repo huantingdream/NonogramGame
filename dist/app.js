@@ -1,7 +1,7 @@
 const difficultyConfig = {
-  easy: { label: "简单", density: 0.47, symmetry: true, hints: 3, mistakeLimit: 3, description: "适合热身，赠送 3 格提示" },
-  normal: { label: "普通", density: 0.5, symmetry: false, hints: 1, mistakeLimit: 3, description: "稍有挑战，赠送 1 格提示" },
-  hard: { label: "困难", density: 0.54, symmetry: false, hints: 0, mistakeLimit: 3, description: "只给线索，不提供起始提示" }
+  easy: { label: "简单", density: 0.47, symmetry: true, hints: 3, description: "适合热身，赠送 3 格提示" },
+  normal: { label: "普通", density: 0.5, symmetry: false, hints: 1, description: "稍有挑战，赠送 1 格提示" },
+  hard: { label: "困难", density: 0.54, symmetry: false, hints: 0, description: "只给线索，不提供起始提示" }
 };
 
 const sizeDescriptions = {
@@ -16,20 +16,20 @@ const state = {
   tool: "fill",
   solution: [],
   player: [],
-  mistakes: 0,
   startedAt: null,
   elapsed: 0,
   timerId: null,
   isPointerDown: false,
   dragValue: null,
+  history: [],
+  submissionStatus: "idle",
   completed: false,
   puzzleId: 0
 };
 
 const grid = document.querySelector("#puzzleGrid");
 const timerOutput = document.querySelector("#timer");
-const mistakesOutput = document.querySelector("#mistakes");
-const mistakeLimitOutput = document.querySelector("#mistakeLimit");
+const gameStatus = document.querySelector("#gameStatus");
 const boardTitle = document.querySelector("#boardTitle");
 const puzzleNumber = document.querySelector("#puzzleNumber");
 const difficultyDescription = document.querySelector("#difficultyDescription");
@@ -37,6 +37,7 @@ const sizeDescription = document.querySelector("#sizeDescription");
 const toast = document.querySelector("#toast");
 const howToModal = document.querySelector("#howToModal");
 const victoryModal = document.querySelector("#victoryModal");
+const undoButton = document.querySelector("#undoButton");
 
 function makeSeededRandom(seed) {
   let value = seed >>> 0;
@@ -155,18 +156,17 @@ function renderPlayerState() {
     const label = value === 1 ? "已填色" : value === -1 ? "已标为空格" : "空白";
     cell.setAttribute("aria-label", `第 ${row + 1} 行，第 ${col + 1} 列，${label}`);
   });
-  updateSolvedClues();
 }
 
-function updateSolvedClues() {
-  for (let row = 0; row < state.size; row += 1) {
-    const solved = state.player[row].every((value, col) => (value === 1) === state.solution[row][col]);
-    grid.querySelector(`[data-row-clue="${row}"]`)?.classList.toggle("solved", solved);
-  }
-  for (let col = 0; col < state.size; col += 1) {
-    const solved = state.player.every((row, index) => (row[col] === 1) === state.solution[index][col]);
-    grid.querySelector(`[data-col-clue="${col}"]`)?.classList.toggle("solved", solved);
-  }
+function setCluesCompleted(completed) {
+  grid.querySelectorAll(".row-clue, .col-clue").forEach((clue) => clue.classList.toggle("solved", completed));
+}
+
+function updateGameStatus(status) {
+  const labels = { idle: "未提交", active: "进行中", incorrect: "再检查", correct: "正确" };
+  state.submissionStatus = status;
+  gameStatus.textContent = labels[status];
+  gameStatus.dataset.tone = status;
 }
 
 function startTimer() {
@@ -189,45 +189,72 @@ function showToast(message) {
   showToast.timeout = window.setTimeout(() => toast.classList.remove("show"), 1800);
 }
 
-function setCell(row, col, requestedValue, { hinted = false } = {}) {
+function updateUndoButton() {
+  undoButton.disabled = state.history.length === 0;
+}
+
+function pushHistory() {
+  state.history.push({
+    player: state.player.map((row) => [...row]),
+    completed: state.completed
+  });
+  if (state.history.length > 100) state.history.shift();
+  updateUndoButton();
+}
+
+function undo() {
+  const previous = state.history.pop();
+  if (!previous) return;
+  state.player = previous.player.map((row) => [...row]);
+  state.completed = previous.completed;
+  if (victoryModal.open) victoryModal.close();
+  if (!state.completed && state.startedAt && !state.timerId) state.timerId = window.setInterval(updateTimer, 1000);
+  setCluesCompleted(false);
+  updateGameStatus("active");
+  renderPlayerState();
+  updateUndoButton();
+  showToast("已撤回上一步");
+}
+
+function setCell(row, col, requestedValue, { hinted = false, recordHistory = true } = {}) {
   if (state.completed) return;
   startTimer();
   const current = state.player[row][col];
   const next = current === requestedValue ? 0 : requestedValue;
   const cell = grid.querySelector(`[data-row="${row}"][data-col="${col}"]`);
 
-  if (next === 1 && !state.solution[row][col]) {
-    state.mistakes += 1;
-    mistakesOutput.textContent = state.mistakes;
-    cell.classList.remove("wrong");
-    requestAnimationFrame(() => cell.classList.add("wrong"));
-    window.setTimeout(() => cell.classList.remove("wrong"), 360);
-    showToast("这里不是填色格，再看看数字线索");
-    if (state.mistakes >= difficultyConfig[state.difficulty].mistakeLimit) showToast("别急，打叉能帮你排除空格");
-    return;
-  }
+  if (recordHistory) pushHistory();
 
   state.player[row][col] = next;
   cell?.classList.toggle("hinted", hinted);
+  setCluesCompleted(false);
+  updateGameStatus("active");
   renderPlayerState();
-  checkVictory();
 }
 
-function applyTool(cell, valueOverride = null) {
+function applyTool(cell, valueOverride = null, options = {}) {
   const row = Number(cell.dataset.row);
   const col = Number(cell.dataset.col);
   const requestedValue = valueOverride ?? (state.tool === "fill" ? 1 : -1);
-  setCell(row, col, requestedValue);
+  setCell(row, col, requestedValue, options);
 }
 
-function checkVictory() {
-  const won = state.solution.every((row, rowIndex) => row.every((filled, colIndex) => !filled || state.player[rowIndex][colIndex] === 1));
-  if (!won) return;
+function submitPuzzle() {
+  const won = state.solution.every((row, rowIndex) => row.every((filled, colIndex) => (state.player[rowIndex][colIndex] === 1) === filled));
+  if (!won) {
+    updateGameStatus("incorrect");
+    showToast("答案还不正确，再检查一下整张棋盘");
+    return false;
+  }
   state.completed = true;
   window.clearInterval(state.timerId);
+  state.timerId = null;
   updateTimer();
+  setCluesCompleted(true);
+  updateGameStatus("correct");
   document.querySelector("#victorySummary").textContent = `你用 ${timerOutput.textContent} 完成了这道 ${state.size} × ${state.size} 题目。`;
   window.setTimeout(() => victoryModal.showModal(), 260);
+  return true;
 }
 
 function revealStartingHints(count) {
@@ -251,19 +278,20 @@ function newGame() {
   const generated = generateSolution(state.size, config);
   state.solution = generated.solution;
   state.player = Array.from({ length: state.size }, () => Array(state.size).fill(0));
-  state.mistakes = 0;
   state.startedAt = null;
   state.elapsed = 0;
   state.timerId = null;
+  state.history = [];
+  state.submissionStatus = "idle";
   state.completed = false;
   state.puzzleId = generated.seed % 10000;
-  mistakesOutput.textContent = "0";
-  mistakeLimitOutput.textContent = ` / ${config.mistakeLimit}`;
   timerOutput.textContent = "00:00";
   boardTitle.textContent = `${state.size} × ${state.size} · ${config.label}`;
   puzzleNumber.textContent = `PUZZLE #${state.puzzleId.toString().padStart(4, "0")}`;
   renderGrid();
   revealStartingHints(config.hints);
+  updateGameStatus("idle");
+  updateUndoButton();
 }
 
 function selectOption(group, activeButton) {
@@ -301,7 +329,8 @@ grid.addEventListener("pointerdown", (event) => {
   event.preventDefault();
   state.isPointerDown = true;
   state.dragValue = event.button === 2 ? -1 : (state.tool === "fill" ? 1 : -1);
-  applyTool(cell, state.dragValue);
+  pushHistory();
+  applyTool(cell, state.dragValue, { recordHistory: false });
 });
 
 grid.addEventListener("pointerover", (event) => {
@@ -309,7 +338,7 @@ grid.addEventListener("pointerover", (event) => {
   if (!state.isPointerDown || !cell) return;
   const row = Number(cell.dataset.row);
   const col = Number(cell.dataset.col);
-  if (state.player[row][col] !== state.dragValue) applyTool(cell, state.dragValue);
+  if (state.player[row][col] !== state.dragValue) applyTool(cell, state.dragValue, { recordHistory: false });
 });
 
 window.addEventListener("pointerup", () => { state.isPointerDown = false; state.dragValue = null; });
@@ -324,10 +353,23 @@ window.addEventListener("resize", renderGrid);
 
 document.querySelector("#newGameButton").addEventListener("click", newGame);
 document.querySelector("#nextPuzzleButton").addEventListener("click", () => { victoryModal.close(); newGame(); });
+document.querySelector("#submitButton").addEventListener("click", submitPuzzle);
+undoButton.addEventListener("click", undo);
 document.querySelector("#clearButton").addEventListener("click", () => {
+  if (!state.player.some((row) => row.some((cell) => cell !== 0))) return;
+  pushHistory();
   state.player = Array.from({ length: state.size }, () => Array(state.size).fill(0));
+  setCluesCompleted(false);
+  updateGameStatus("active");
   renderPlayerState();
   showToast("棋盘已清空");
+});
+
+window.addEventListener("keydown", (event) => {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && !event.shiftKey) {
+    event.preventDefault();
+    undo();
+  }
 });
 
 document.querySelector("#howToButton").addEventListener("click", () => howToModal.showModal());
@@ -351,7 +393,7 @@ function registerWebMcpTools() {
   register({
     name: "read_nonogram_state",
     title: "读取游戏状态",
-    description: "读取当前 Nonogram 的尺寸、难度、计时、错误数和完成状态。",
+    description: "读取当前 Nonogram 的尺寸、难度、计时、提交状态和完成状态。",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     annotations: { readOnlyHint: true, untrustedContentHint: false },
     execute() {
@@ -359,7 +401,7 @@ function registerWebMcpTools() {
         size: state.size,
         difficulty: state.difficulty,
         elapsedSeconds: state.elapsed,
-        mistakes: state.mistakes,
+        submissionStatus: state.submissionStatus,
         completed: state.completed
       };
     }
@@ -427,13 +469,27 @@ function registerWebMcpTools() {
           throw new Error("方格位置或标记类型无效");
         }
       });
+      pushHistory();
       input.cells.forEach(({ row, column, mark }) => {
         if (mark === "clear") state.player[row - 1][column - 1] = 0;
-        else setCell(row - 1, column - 1, mark === "fill" ? 1 : -1);
+        else setCell(row - 1, column - 1, mark === "fill" ? 1 : -1, { recordHistory: false });
       });
       renderPlayerState();
-      checkVictory();
-      return { updated: input.cells.length, mistakes: state.mistakes, completed: state.completed };
+      setCluesCompleted(false);
+      updateGameStatus("active");
+      return { updated: input.cells.length, submissionStatus: state.submissionStatus };
+    }
+  });
+
+  register({
+    name: "submit_nonogram_answer",
+    title: "提交答案",
+    description: "提交并检查当前整张 Nonogram 棋盘，只返回整体正确或不正确。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    annotations: { readOnlyHint: false, untrustedContentHint: false },
+    execute() {
+      const correct = submitPuzzle();
+      return { correct, submissionStatus: state.submissionStatus, completed: state.completed };
     }
   });
 }

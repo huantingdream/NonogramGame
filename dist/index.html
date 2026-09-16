@@ -67,7 +67,7 @@
             </div>
             <div class="status-cluster" aria-label="游戏状态">
               <div><span>用时</span><strong id="timer">00:00</strong></div>
-              <div><span>错误</span><strong><b id="mistakes">0</b><small id="mistakeLimit"> / 3</small></strong></div>
+              <div><span>状态</span><strong class="game-status" id="gameStatus" data-tone="idle">未提交</strong></div>
             </div>
           </div>
 
@@ -86,9 +86,15 @@
                 <span class="cross-swatch" aria-hidden="true">×</span> 标记空格
               </button>
             </div>
-            <button class="text-button" id="clearButton" type="button">清空棋盘</button>
+            <div class="board-actions">
+              <button class="undo-button" id="undoButton" type="button" disabled aria-label="撤回上一步">
+                <span aria-hidden="true">↶</span> 撤回
+              </button>
+              <button class="text-button" id="clearButton" type="button">清空棋盘</button>
+              <button class="submit-button" id="submitButton" type="button">提交答案</button>
+            </div>
           </div>
-          <p class="desktop-tip">左键填色 · 右键打叉 · 按住并拖动可连续操作</p>
+          <p class="desktop-tip">再次点击可取消 · 按住拖动可连续操作 · ⌘/Ctrl + Z 撤回</p>
         </section>
       </section>
     </main>
@@ -102,7 +108,8 @@
         <span class="demo-cell filled"></span><span class="demo-cell filled"></span><span class="demo-cell crossed">×</span><span class="demo-cell filled"></span><span class="demo-cell crossed">×</span>
       </div>
       <p>每个数字代表一组连续填色格。多组数字之间，至少隔一个空格。</p>
-      <p>选择“填色”画出图案；确定某格为空时，用“×”标记。所有填色格正确后即可完成。</p>
+      <p>选择“填色”画出图案；确定某格为空时，用“×”标记。再次点击同一格可取消，点错也可以随时撤回。</p>
+      <p>作答过程中不会提示对错。完成后点击“提交答案”，一次检查整张棋盘。</p>
       <button class="primary-button" type="button" data-close-modal>开始游戏</button>
     </dialog>
 
