@@ -24,7 +24,9 @@ const state = {
   history: [],
   submissionStatus: "idle",
   completed: false,
-  puzzleId: 0
+  puzzleId: 0,
+  generating: false,
+  generationRequestId: 0
 };
 
 const grid = document.querySelector("#puzzleGrid");
@@ -241,16 +243,24 @@ function buildGuaranteedUniqueFallback(size, seed) {
   return solution;
 }
 
-function generateSolution(size, config) {
+function waitForNextFrame() {
+  return new Promise((resolve) => window.requestAnimationFrame(() => window.setTimeout(resolve, 0)));
+}
+
+async function generateSolution(size, config, requestId) {
   const baseSeed = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
   const maxAttempts = size === 5 ? 80 : size === 10 ? 50 : 35;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (requestId !== state.generationRequestId) return null;
     const seed = (baseSeed + Math.imul(attempt, 2654435761)) >>> 0;
     const solution = buildCandidateSolution(size, config, seed);
     if (countPuzzleSolutions(solution) === 1) return { solution, seed };
+    // Let mobile browsers paint the selection before the next uniqueness check.
+    if (size === 15 || attempt % 3 === 2) await waitForNextFrame();
   }
 
+  if (requestId !== state.generationRequestId) return null;
   const fallbackSeed = (baseSeed + 2246822519) >>> 0;
   return { solution: buildGuaranteedUniqueFallback(size, fallbackSeed), seed: fallbackSeed };
 }
@@ -353,7 +363,7 @@ function setCluesCompleted(completed) {
 }
 
 function updateGameStatus(status) {
-  const labels = { idle: "未提交", active: "进行中", incorrect: "再检查", correct: "正确" };
+  const labels = { idle: "未提交", generating: "生成中", active: "进行中", incorrect: "再检查", correct: "正确" };
   state.submissionStatus = status;
   gameStatus.textContent = labels[status];
   gameStatus.dataset.tone = status;
@@ -407,7 +417,7 @@ function undo() {
 }
 
 function setCell(row, col, requestedValue, { hinted = false, recordHistory = true } = {}) {
-  if (state.completed) return;
+  if (state.completed || state.generating) return;
   startTimer();
   const current = state.player[row][col];
   const next = current === requestedValue ? 0 : requestedValue;
@@ -430,6 +440,10 @@ function applyTool(cell, valueOverride = null, options = {}) {
 }
 
 function submitPuzzle() {
+  if (state.generating) {
+    showToast("题目正在生成，请稍等一下");
+    return false;
+  }
   const won = state.solution.every((row, rowIndex) => row.every((filled, colIndex) => (state.player[rowIndex][colIndex] === 1) === filled));
   if (!won) {
     updateGameStatus("incorrect");
@@ -462,26 +476,40 @@ function revealStartingHints(count) {
   renderPlayerState();
 }
 
-function newGame() {
+async function newGame() {
+  const requestId = ++state.generationRequestId;
+  const requestedSize = state.size;
+  const requestedDifficulty = state.difficulty;
+  const config = difficultyConfig[requestedDifficulty];
   window.clearInterval(state.timerId);
-  const config = difficultyConfig[state.difficulty];
-  const generated = generateSolution(state.size, config);
+  state.timerId = null;
+  state.generating = true;
+  boardTitle.textContent = `${requestedSize} × ${requestedSize} · 正在生成…`;
+  updateGameStatus("generating");
+  document.querySelector("#newGameButton").setAttribute("aria-busy", "true");
+  await waitForNextFrame();
+
+  const generated = await generateSolution(requestedSize, config, requestId);
+  if (!generated || requestId !== state.generationRequestId) return false;
+
   state.solution = generated.solution;
-  state.player = Array.from({ length: state.size }, () => Array(state.size).fill(0));
+  state.player = Array.from({ length: requestedSize }, () => Array(requestedSize).fill(0));
   state.startedAt = null;
   state.elapsed = 0;
-  state.timerId = null;
   state.history = [];
   state.submissionStatus = "idle";
   state.completed = false;
+  state.generating = false;
   state.puzzleId = Math.abs(generated.seed % 10000);
   timerOutput.textContent = "00:00";
-  boardTitle.textContent = `${state.size} × ${state.size} · ${config.label}`;
+  boardTitle.textContent = `${requestedSize} × ${requestedSize} · ${config.label}`;
   puzzleNumber.textContent = `PUZZLE #${state.puzzleId.toString().padStart(4, "0")}`;
   renderGrid();
   revealStartingHints(config.hints);
   updateGameStatus("idle");
   updateUndoButton();
+  document.querySelector("#newGameButton").removeAttribute("aria-busy");
+  return true;
 }
 
 function selectOption(group, activeButton) {
@@ -541,7 +569,7 @@ grid.addEventListener("keydown", (event) => {
 });
 window.addEventListener("resize", renderGrid);
 
-document.querySelector("#newGameButton").addEventListener("click", newGame);
+document.querySelector("#newGameButton").addEventListener("click", () => { newGame(); });
 document.querySelector("#nextPuzzleButton").addEventListener("click", () => { victoryModal.close(); newGame(); });
 document.querySelector("#submitButton").addEventListener("click", submitPuzzle);
 undoButton.addEventListener("click", undo);
@@ -611,7 +639,7 @@ function registerWebMcpTools() {
       additionalProperties: false
     },
     annotations: { readOnlyHint: false, untrustedContentHint: false },
-    execute(input) {
+    async execute(input) {
       if (![5, 10, 15].includes(input?.size) || !difficultyConfig[input?.difficulty]) {
         throw new Error("尺寸或难度无效");
       }
@@ -621,7 +649,7 @@ function registerWebMcpTools() {
       document.querySelectorAll("#difficultyPicker button").forEach((button) => button.setAttribute("aria-checked", button.dataset.difficulty === state.difficulty ? "true" : "false"));
       sizeDescription.textContent = sizeDescriptions[state.size];
       difficultyDescription.textContent = difficultyConfig[state.difficulty].description;
-      newGame();
+      await newGame();
       return { puzzleId: state.puzzleId, size: state.size, difficulty: state.difficulty };
     }
   });
