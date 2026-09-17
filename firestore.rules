@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: scores
+    // Document ID: <uid>_<size>_<difficulty>_<puzzleSeed>
+    // Fields:
+    //   - uid: string (required, immutable, authenticated owner UID)
+    //   - nickname: string (required, 1-20 chars, auth display name)
+    //   - size: int (required, one of 5/10/15)
+    //   - difficulty: string (required, easy/normal/hard)
+    //   - elapsedSeconds: int (required, 1-86400)
+    //   - puzzleId: int (required, 0-9999)
+    //   - puzzleSeed: int (required, 0-4294967295)
+    //   - createdAt: timestamp (required, server timestamp)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function uidUnchanged() {
+      return isAuthenticated() &&
+        request.resource.data.uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return request.resource.data.uid == resource.data.uid;
+    }
+
+    function hasRequiredFields(data, fields) {
+      return data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(data, fields) {
+      return data.keys().hasOnly(fields);
+    }
+
+    function isValidScore(data) {
+      let fields = [
+        'uid',
+        'nickname',
+        'size',
+        'difficulty',
+        'elapsedSeconds',
+        'puzzleId',
+        'puzzleSeed',
+        'createdAt'
+      ];
+      return hasRequiredFields(data, fields) &&
+        hasOnlyAllowedFields(data, fields) &&
+        data.uid is string &&
+        data.uid.size() > 0 &&
+        data.uid.size() <= 128 &&
+        data.nickname is string &&
+        data.nickname.size() >= 1 &&
+        data.nickname.size() <= 20 &&
+        data.nickname == request.auth.token.name &&
+        data.size is int &&
+        data.size in [5, 10, 15] &&
+        data.difficulty is string &&
+        data.difficulty in ['easy', 'normal', 'hard'] &&
+        data.elapsedSeconds is int &&
+        data.elapsedSeconds >= 1 &&
+        data.elapsedSeconds <= 86400 &&
+        data.puzzleId is int &&
+        data.puzzleId >= 0 &&
+        data.puzzleId <= 9999 &&
+        data.puzzleSeed is int &&
+        data.puzzleSeed >= 0 &&
+        data.puzzleSeed <= 4294967295 &&
+        data.createdAt is timestamp &&
+        data.createdAt == request.time;
+    }
+
+    match /scores/{scoreId} {
+      // Scores contain game data only. Reads require login and list queries
+      // must remain bounded to protect the free quota from broad scans.
+      allow get: if isAuthenticated();
+      allow list: if isAuthenticated() &&
+        request.query.limit != null &&
+        request.query.limit <= 20;
+
+      // Players can submit only their own strictly validated score document.
+      allow create: if isAuthenticated() &&
+        isOwner(request.resource.data.uid) &&
+        uidUnchanged() &&
+        scoreId.matches(request.auth.uid + '_(5|10|15)_(easy|normal|hard)_[0-9]+') &&
+        isValidScore(request.resource.data);
+
+      // Scores are immutable. Replays use the same deterministic document ID.
+      allow update: if isAuthenticated() &&
+        isOwner(resource.data.uid) &&
+        uidNotModified() &&
+        isValidScore(request.resource.data) &&
+        false;
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

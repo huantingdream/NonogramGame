@@ -1,0 +1,18 @@
+{
+  "auth": {
+    "authorizedDomains": [
+      "localhost",
+      "nonogram-9d316.firebaseapp.com",
+      "nonogram-9d316.web.app",
+      "huantingdream.github.io"
+    ],
+    "providers": {
+      "emailPassword": true
+    }
+  },
+  "firestore": {
+    "database": "(default)",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

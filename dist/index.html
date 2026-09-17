@@ -9,7 +9,7 @@
       content="一个简单易懂、可自动生成题目的 Nonogram 数织小游戏。"
     />
     <title>格间 · Nonogram</title>
-    <link rel="stylesheet" href="./styles.css?v=20260917-4" />
+    <link rel="stylesheet" href="./styles.css?v=20260917-5" />
   </head>
   <body>
     <main class="app-shell">
@@ -20,9 +20,17 @@
           </span>
           <span><strong>格间</strong><small>NONOGRAM</small></span>
         </a>
-        <button class="how-to-button" id="howToButton" type="button" aria-expanded="false">
-          <span aria-hidden="true">?</span> 怎么玩
-        </button>
+        <div class="topbar-actions">
+          <button class="topbar-button" id="leaderboardButton" type="button">
+            <span aria-hidden="true">♛</span> 排行榜
+          </button>
+          <button class="topbar-button account-button" id="accountButton" type="button">
+            <span class="account-dot" aria-hidden="true"></span><span id="accountButtonLabel">登录</span>
+          </button>
+          <button class="how-to-button" id="howToButton" type="button" aria-expanded="false">
+            <span aria-hidden="true">?</span> 怎么玩
+          </button>
+        </div>
       </header>
 
       <section class="game-layout" aria-label="Nonogram 游戏">
@@ -118,10 +126,63 @@
       <span class="modal-kicker">PUZZLE COMPLETE</span>
       <h2>图案完成！</h2>
       <p id="victorySummary">你用 00:00 完成了这道题。</p>
+      <div class="victory-score-card">
+        <p id="victoryScoreMessage">登录后可以把成绩放进排行榜。</p>
+        <button class="secondary-button" id="scoreActionButton" type="button">登录并上传成绩</button>
+      </div>
       <button class="primary-button" id="nextPuzzleButton" type="button">再来一题</button>
     </dialog>
 
+    <dialog class="modal auth-modal" id="authModal">
+      <button class="modal-close" type="button" data-close-auth aria-label="关闭">×</button>
+      <div id="signedOutPanel">
+        <span class="modal-kicker">PLAYER ACCOUNT</span>
+        <h2 id="authTitle">登录</h2>
+        <div class="auth-mode-switch" role="tablist" aria-label="登录或注册">
+          <button type="button" role="tab" aria-selected="true" data-auth-mode="login">登录</button>
+          <button type="button" role="tab" aria-selected="false" data-auth-mode="register">注册</button>
+        </div>
+        <form id="authForm">
+          <label class="form-field" id="nicknameField" hidden>
+            <span>排行榜昵称</span>
+            <input id="nicknameInput" name="nickname" type="text" minlength="1" maxlength="20" autocomplete="nickname" placeholder="1–20 个字符" />
+          </label>
+          <label class="form-field">
+            <span>邮箱</span>
+            <input id="emailInput" name="email" type="email" autocomplete="email" required placeholder="name@example.com" />
+          </label>
+          <label class="form-field">
+            <span>密码</span>
+            <input id="passwordInput" name="password" type="password" minlength="6" autocomplete="current-password" required placeholder="至少 6 位" />
+          </label>
+          <p class="form-message" id="authMessage" role="status" aria-live="polite"></p>
+          <button class="primary-button" id="authSubmitButton" type="submit">登录</button>
+        </form>
+      </div>
+      <div class="signed-in-panel" id="signedInPanel" hidden>
+        <span class="modal-kicker">PLAYER ACCOUNT</span>
+        <div class="account-avatar" id="accountAvatar" aria-hidden="true">玩</div>
+        <h2 id="accountName">玩家</h2>
+        <p id="accountEmail"></p>
+        <button class="secondary-button danger-button" id="signOutButton" type="button">退出登录</button>
+      </div>
+    </dialog>
+
+    <dialog class="modal leaderboard-modal" id="leaderboardModal">
+      <button class="modal-close" type="button" data-close-leaderboard aria-label="关闭">×</button>
+      <span class="modal-kicker">LEADERBOARD</span>
+      <h2>最快完成榜</h2>
+      <div class="leaderboard-filters">
+        <label><span>大小</span><select id="leaderboardSize"><option value="5">5 × 5</option><option value="10">10 × 10</option><option value="15">15 × 15</option></select></label>
+        <label><span>难度</span><select id="leaderboardDifficulty"><option value="easy">简单</option><option value="normal">普通</option><option value="hard">困难</option></select></label>
+      </div>
+      <div class="leaderboard-state" id="leaderboardState" role="status" aria-live="polite">登录后查看排行榜。</div>
+      <ol class="leaderboard-list" id="leaderboardList"></ol>
+      <button class="secondary-button" id="leaderboardLoginButton" type="button">登录后查看</button>
+    </dialog>
+
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=20260917-5"></script>
+    <script src="./app.js?v=20260917-6"></script>
+    <script type="module" src="./firebase.js?v=20260917-1"></script>
   </body>
 </html>

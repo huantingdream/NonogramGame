@@ -25,8 +25,14 @@ const state = {
   submissionStatus: "idle",
   completed: false,
   puzzleId: 0,
+  puzzleSeed: 0,
   generating: false,
-  generationRequestId: 0
+  generationRequestId: 0,
+  firebaseAvailable: false,
+  currentUser: null,
+  authMode: "login",
+  scoreSubmitted: false,
+  scoreSubmitting: false
 };
 
 const grid = document.querySelector("#puzzleGrid");
@@ -40,6 +46,17 @@ const toast = document.querySelector("#toast");
 const howToModal = document.querySelector("#howToModal");
 const victoryModal = document.querySelector("#victoryModal");
 const undoButton = document.querySelector("#undoButton");
+const authModal = document.querySelector("#authModal");
+const leaderboardModal = document.querySelector("#leaderboardModal");
+const accountButtonLabel = document.querySelector("#accountButtonLabel");
+const signedOutPanel = document.querySelector("#signedOutPanel");
+const signedInPanel = document.querySelector("#signedInPanel");
+const authMessage = document.querySelector("#authMessage");
+const leaderboardList = document.querySelector("#leaderboardList");
+const leaderboardState = document.querySelector("#leaderboardState");
+const leaderboardLoginButton = document.querySelector("#leaderboardLoginButton");
+const scoreActionButton = document.querySelector("#scoreActionButton");
+const victoryScoreMessage = document.querySelector("#victoryScoreMessage");
 
 function makeSeededRandom(seed) {
   let value = seed >>> 0;
@@ -412,6 +429,157 @@ function showToast(message) {
   showToast.timeout = window.setTimeout(() => toast.classList.remove("show"), 1800);
 }
 
+function formatElapsed(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
+  const seconds = (totalSeconds % 60).toString().padStart(2, "0");
+  return `${minutes}:${seconds}`;
+}
+
+function firebaseApi() {
+  return state.firebaseAvailable ? window.nonogramFirebase : null;
+}
+
+function displayNameForUser(user) {
+  if (!user) return "";
+  return user.displayName || `玩家${user.uid.slice(0, 6)}`;
+}
+
+function updateAccountUi() {
+  const user = state.currentUser;
+  document.querySelector("#accountButton").classList.toggle("is-signed-in", Boolean(user));
+  accountButtonLabel.textContent = user ? displayNameForUser(user) : "登录";
+  signedOutPanel.hidden = Boolean(user);
+  signedInPanel.hidden = !user;
+
+  if (user) {
+    const displayName = displayNameForUser(user);
+    document.querySelector("#accountName").textContent = displayName;
+    document.querySelector("#accountEmail").textContent = user.email;
+    document.querySelector("#accountAvatar").textContent = displayName.slice(0, 1).toUpperCase();
+  }
+  updateVictoryScoreUi();
+}
+
+function updateVictoryScoreUi() {
+  if (state.scoreSubmitted) {
+    victoryScoreMessage.textContent = "这次成绩已经进入排行榜。";
+    scoreActionButton.textContent = "已上传";
+    scoreActionButton.disabled = true;
+    return;
+  }
+  scoreActionButton.disabled = state.scoreSubmitting;
+  if (state.scoreSubmitting) {
+    victoryScoreMessage.textContent = "正在上传成绩…";
+    scoreActionButton.textContent = "上传中";
+  } else if (state.currentUser) {
+    victoryScoreMessage.textContent = `以“${displayNameForUser(state.currentUser)}”提交这次成绩。`;
+    scoreActionButton.textContent = "上传成绩";
+  } else {
+    victoryScoreMessage.textContent = "登录后可以把成绩放进排行榜。";
+    scoreActionButton.textContent = "登录并上传成绩";
+  }
+}
+
+function setAuthMode(mode) {
+  state.authMode = mode;
+  const registering = mode === "register";
+  document.querySelector("#authTitle").textContent = registering ? "创建玩家账号" : "登录";
+  document.querySelector("#nicknameField").hidden = !registering;
+  document.querySelector("#nicknameInput").required = registering;
+  document.querySelector("#passwordInput").autocomplete = registering ? "new-password" : "current-password";
+  document.querySelector("#authSubmitButton").textContent = registering ? "创建账号" : "登录";
+  document.querySelectorAll("[data-auth-mode]").forEach((button) => {
+    button.setAttribute("aria-selected", button.dataset.authMode === mode ? "true" : "false");
+  });
+  authMessage.textContent = "";
+}
+
+function authErrorMessage(error) {
+  const messages = {
+    "auth/email-already-in-use": "这个邮箱已经注册，可以直接登录。",
+    "auth/invalid-credential": "邮箱或密码不正确。",
+    "auth/invalid-email": "邮箱格式不正确。",
+    "auth/weak-password": "密码至少需要 6 位。",
+    "auth/too-many-requests": "尝试次数过多，请稍后再试。",
+    "auth/network-request-failed": "网络连接失败，请检查网络后重试。"
+  };
+  return messages[error?.code] || "操作失败，请稍后再试。";
+}
+
+async function loadLeaderboard() {
+  leaderboardList.innerHTML = "";
+  leaderboardLoginButton.hidden = Boolean(state.currentUser);
+  if (!state.firebaseAvailable) {
+    leaderboardState.textContent = "排行榜服务暂时不可用，游戏仍可正常进行。";
+    return;
+  }
+  if (!state.currentUser) {
+    leaderboardState.textContent = "登录后查看排行榜。";
+    return;
+  }
+
+  leaderboardState.textContent = "正在加载…";
+  try {
+    const scores = await firebaseApi().loadLeaderboard({
+      size: Number(document.querySelector("#leaderboardSize").value),
+      difficulty: document.querySelector("#leaderboardDifficulty").value
+    });
+    if (!scores.length) {
+      leaderboardState.textContent = "这个榜单还没有成绩，来拿第一名吧。";
+      return;
+    }
+    leaderboardState.textContent = `前 ${scores.length} 名`;
+    leaderboardList.innerHTML = scores.map((score, index) => `
+      <li>
+        <span class="rank">${index + 1}</span>
+        <strong>${escapeHtml(score.nickname)}</strong>
+        <small>题目 #${String(score.puzzleId).padStart(4, "0")}</small>
+        <time>${formatElapsed(score.elapsedSeconds)}</time>
+      </li>
+    `).join("");
+  } catch (error) {
+    leaderboardState.textContent = error?.code === "permission-denied"
+      ? "登录状态已过期，请重新登录。"
+      : "排行榜暂时加载失败，请稍后重试。";
+  }
+}
+
+function escapeHtml(value) {
+  const span = document.createElement("span");
+  span.textContent = String(value);
+  return span.innerHTML;
+}
+
+async function submitScore() {
+  if (!state.completed || state.scoreSubmitted || state.scoreSubmitting) return;
+  if (!state.currentUser) {
+    victoryModal.close();
+    authModal.showModal();
+    return;
+  }
+  state.scoreSubmitting = true;
+  updateVictoryScoreUi();
+  try {
+    const result = await firebaseApi().submitScore({
+      size: state.size,
+      difficulty: state.difficulty,
+      elapsedSeconds: Math.max(1, state.elapsed),
+      puzzleId: state.puzzleId,
+      puzzleSeed: state.puzzleSeed
+    });
+    state.scoreSubmitted = true;
+    victoryScoreMessage.textContent = result.duplicate ? "这道题的成绩已经提交过了。" : "成绩已进入排行榜。";
+    showToast(result.duplicate ? "这道题已经提交过成绩" : "成绩上传成功");
+  } catch (error) {
+    victoryScoreMessage.textContent = error?.code === "permission-denied"
+      ? "暂时无法提交，请重新登录后再试。"
+      : "上传失败，请检查网络后重试。";
+  } finally {
+    state.scoreSubmitting = false;
+    updateVictoryScoreUi();
+  }
+}
+
 function updateUndoButton() {
   undoButton.disabled = state.history.length === 0;
 }
@@ -480,6 +648,7 @@ function submitPuzzle() {
   setCluesCompleted(true);
   updateGameStatus("correct");
   document.querySelector("#victorySummary").textContent = `你用 ${timerOutput.textContent} 完成了这道 ${state.size} × ${state.size} 题目。`;
+  updateVictoryScoreUi();
   window.setTimeout(() => victoryModal.showModal(), 260);
   return true;
 }
@@ -522,7 +691,10 @@ async function newGame() {
   state.history = [];
   state.submissionStatus = "idle";
   state.completed = false;
+  state.scoreSubmitted = false;
+  state.scoreSubmitting = false;
   state.generating = false;
+  state.puzzleSeed = generated.seed >>> 0;
   state.puzzleId = Math.abs(generated.seed % 10000);
   timerOutput.textContent = "00:00";
   boardTitle.textContent = `${requestedSize} × ${requestedSize} · ${config.label}`;
@@ -630,9 +802,92 @@ window.addEventListener("keydown", (event) => {
 
 document.querySelector("#howToButton").addEventListener("click", () => howToModal.showModal());
 document.querySelectorAll("[data-close-modal]").forEach((button) => button.addEventListener("click", () => howToModal.close()));
-[howToModal, victoryModal].forEach((modal) => modal.addEventListener("click", (event) => {
+[howToModal, victoryModal, authModal, leaderboardModal].forEach((modal) => modal.addEventListener("click", (event) => {
   if (event.target === modal) modal.close();
 }));
+
+document.querySelector("#accountButton").addEventListener("click", () => {
+  if (!state.firebaseAvailable) {
+    showToast("登录服务正在连接，请稍后再试");
+    return;
+  }
+  updateAccountUi();
+  authModal.showModal();
+});
+
+document.querySelector("#leaderboardButton").addEventListener("click", () => {
+  document.querySelector("#leaderboardSize").value = String(state.size);
+  document.querySelector("#leaderboardDifficulty").value = state.difficulty;
+  leaderboardModal.showModal();
+  loadLeaderboard();
+});
+
+document.querySelectorAll("[data-auth-mode]").forEach((button) => {
+  button.addEventListener("click", () => setAuthMode(button.dataset.authMode));
+});
+
+document.querySelector("#authForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!state.firebaseAvailable) {
+    authMessage.textContent = "登录服务暂时不可用，请稍后再试。";
+    return;
+  }
+  const submitButton = document.querySelector("#authSubmitButton");
+  const email = document.querySelector("#emailInput").value;
+  const password = document.querySelector("#passwordInput").value;
+  const nickname = document.querySelector("#nicknameInput").value.trim();
+  if (state.authMode === "register" && (nickname.length < 1 || nickname.length > 20)) {
+    authMessage.textContent = "昵称需要 1–20 个字符。";
+    return;
+  }
+  submitButton.disabled = true;
+  authMessage.textContent = state.authMode === "register" ? "正在创建账号…" : "正在登录…";
+  try {
+    if (state.authMode === "register") await firebaseApi().register({ email, password, nickname });
+    else await firebaseApi().login({ email, password });
+    authMessage.textContent = "";
+    authModal.close();
+    showToast(state.authMode === "register" ? "账号创建成功" : "登录成功");
+    if (state.completed && !state.scoreSubmitted) window.setTimeout(() => victoryModal.showModal(), 120);
+  } catch (error) {
+    authMessage.textContent = authErrorMessage(error);
+  } finally {
+    submitButton.disabled = false;
+  }
+});
+
+document.querySelector("#signOutButton").addEventListener("click", async () => {
+  try {
+    await firebaseApi().logout();
+    authModal.close();
+    showToast("已退出登录");
+  } catch (_) {
+    showToast("退出失败，请稍后重试");
+  }
+});
+
+document.querySelector("#leaderboardSize").addEventListener("change", loadLeaderboard);
+document.querySelector("#leaderboardDifficulty").addEventListener("change", loadLeaderboard);
+document.querySelector("#leaderboardLoginButton").addEventListener("click", () => {
+  leaderboardModal.close();
+  if (state.firebaseAvailable) authModal.showModal();
+  else showToast("登录服务正在连接，请稍后再试");
+});
+scoreActionButton.addEventListener("click", submitScore);
+document.querySelectorAll("[data-close-auth]").forEach((button) => button.addEventListener("click", () => authModal.close()));
+document.querySelectorAll("[data-close-leaderboard]").forEach((button) => button.addEventListener("click", () => leaderboardModal.close()));
+
+window.addEventListener("nonogram-firebase-ready", () => {
+  state.firebaseAvailable = true;
+  state.currentUser = window.nonogramFirebase.getCurrentUser();
+  updateAccountUi();
+});
+
+window.addEventListener("nonogram-auth-changed", (event) => {
+  state.currentUser = event.detail;
+  updateAccountUi();
+  if (leaderboardModal.open) loadLeaderboard();
+});
 
 newGame();
 
