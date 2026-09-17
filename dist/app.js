@@ -93,19 +93,29 @@ function getAllClues() {
 }
 
 function getLayoutMetrics() {
-  const viewport = Math.min(window.innerWidth, 1200);
-  let cellSize = state.size === 5 ? 47 : state.size === 10 ? 33 : 25;
-  if (viewport < 620) cellSize = state.size === 5 ? 42 : state.size === 10 ? 27 : 21;
-  const clueWidth = state.size === 5 ? 72 : state.size === 10 ? 100 : 118;
-  const clueHeight = state.size === 5 ? 74 : state.size === 10 ? 100 : 116;
-  return { cellSize, clueWidth, clueHeight };
+  const mobile = window.innerWidth <= 620;
+  const preferredCellSize = state.size === 5 ? 47 : state.size === 10 ? 33 : 25;
+
+  if (!mobile) {
+    const clueWidth = state.size === 5 ? 72 : state.size === 10 ? 100 : 118;
+    const clueHeight = state.size === 5 ? 74 : state.size === 10 ? 100 : 116;
+    return { cellSize: preferredCellSize, clueWidth, clueHeight, clueFontSize: 13 };
+  }
+
+  const stageWidth = document.querySelector(".board-stage")?.clientWidth || Math.max(window.innerWidth - 52, 240);
+  const clueWidth = state.size === 5 ? 56 : state.size === 10 ? 66 : 78;
+  const availableForCells = Math.max(stageWidth - clueWidth - 6, state.size * 12);
+  const cellSize = Math.min(preferredCellSize, Math.floor(availableForCells / state.size));
+  const clueHeight = state.size === 5 ? 58 : state.size === 10 ? 78 : 108;
+  return { cellSize, clueWidth, clueHeight, clueFontSize: 12 };
 }
 
 function renderGrid() {
   const { rowClues, colClues } = getAllClues();
-  const { cellSize, clueWidth, clueHeight } = getLayoutMetrics();
+  const { cellSize, clueWidth, clueHeight, clueFontSize } = getLayoutMetrics();
   grid.innerHTML = "";
   grid.style.setProperty("--cell-size", `${cellSize}px`);
+  grid.style.setProperty("--clue-font-size", `${clueFontSize}px`);
   grid.style.gridTemplateColumns = `${clueWidth}px repeat(${state.size}, ${cellSize}px)`;
   grid.style.gridTemplateRows = `${clueHeight}px repeat(${state.size}, ${cellSize}px)`;
 
@@ -284,7 +294,7 @@ function newGame() {
   state.history = [];
   state.submissionStatus = "idle";
   state.completed = false;
-  state.puzzleId = generated.seed % 10000;
+  state.puzzleId = Math.abs(generated.seed % 10000);
   timerOutput.textContent = "00:00";
   boardTitle.textContent = `${state.size} × ${state.size} · ${config.label}`;
   puzzleNumber.textContent = `PUZZLE #${state.puzzleId.toString().padStart(4, "0")}`;

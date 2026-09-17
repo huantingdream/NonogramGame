@@ -182,7 +182,7 @@ h1 em { color: var(--lime); font-style: normal; }
 .corner, .row-clue, .col-clue, .cell { background: var(--white); }
 .corner { display: grid; place-items: end; padding: 8px; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
 .corner span { display: grid; place-items: center; width: 22px; height: 22px; color: var(--white); background: var(--ink); border-radius: 50%; font-size: 0.7rem; font-weight: 800; }
-.row-clue, .col-clue { color: #354062; font-weight: 800; font-variant-numeric: tabular-nums; }
+.row-clue, .col-clue { color: #354062; font-size: var(--clue-font-size, 13px); font-weight: 800; font-variant-numeric: tabular-nums; }
 .row-clue { display: flex; align-items: center; justify-content: flex-end; gap: 7px; padding: 0 10px; border-right: 2px solid var(--ink); border-bottom: 1px solid var(--line); }
 .col-clue { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; padding: 7px 0; border-right: 1px solid var(--line); border-bottom: 2px solid var(--ink); }
 .row-clue.solved, .col-clue.solved { color: #a4abc0; background: #f1f3f8; text-decoration: line-through; }
@@ -288,26 +288,45 @@ h1 em { color: var(--lime); font-style: normal; }
 }
 
 @media (max-width: 620px) {
-  .app-shell { padding: 12px; }
+  .app-shell { padding: 10px; }
   .topbar { margin-bottom: 12px; }
   .game-layout { gap: 12px; }
   .control-panel, .board-card { border-radius: 18px; }
-  .control-panel { padding: 22px 18px; }
+  .control-panel { padding: 20px 16px; }
   .control-panel h1 { display: none; }
-  .eyebrow { margin-bottom: 20px; }
-  .field-group { margin-bottom: 18px; }
+  .eyebrow { margin-bottom: 16px; }
+  .field-group { margin-bottom: 14px; }
   .field-label output { display: none; }
   .mini-guide { display: none; }
-  .board-card { min-height: 570px; padding: 20px 14px 14px; }
-  .board-stage { min-height: 390px; padding: 14px 0; }
+  .board-card { min-height: 0; padding: 18px 10px 12px; }
+  .board-header { padding: 0 4px 14px; }
+  .board-header h2 { font-size: 1.22rem; }
+  .board-stage { min-height: clamp(320px, 48vh, 390px); padding: 12px 0; }
+  .board-scroll { display: grid; place-items: center; width: 100%; overflow: hidden; }
+  .puzzle-grid { max-width: 100%; }
+  .row-clue { gap: 3px; padding: 0 5px; }
+  .col-clue { gap: 1px; padding: 4px 0; }
+  .corner { padding: 5px; }
+  .corner span { width: 20px; height: 20px; }
   .status-cluster { gap: 18px; }
   .status-cluster div + div::before { left: -10px; }
-  .board-toolbar { align-items: stretch; flex-direction: column; }
+  .board-toolbar { align-items: stretch; flex-direction: column; gap: 10px; }
   .tool-switch { display: grid; grid-template-columns: 1fr 1fr; }
   .tool-switch button { justify-content: center; }
-  .board-actions { justify-content: center; }
+  .board-actions { display: grid; grid-template-columns: auto auto 1fr; gap: 8px; }
+  .board-actions .submit-button { min-width: 0; }
   .desktop-tip { display: none; }
   .toast { right: 14px; bottom: 14px; }
+}
+
+@media (max-width: 360px) {
+  .brand small { display: none; }
+  .how-to-button { padding-right: 6px; }
+  .board-header { gap: 12px; }
+  .status-cluster { gap: 14px; }
+  .status-cluster div { min-width: 48px; }
+  .status-cluster div + div::before { left: -8px; }
+  .undo-button, .submit-button { padding-right: 10px; padding-left: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
