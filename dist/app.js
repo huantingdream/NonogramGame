@@ -359,25 +359,24 @@ function renderPlayerState() {
   updateClueCompletion();
 }
 
-function isLineComplete(playerLine, solutionLine) {
-  const matches = solutionLine.every((filled, index) => (playerLine[index] === 1) === filled);
-  if (!matches) return false;
-  // Empty lines should only complete after the player explicitly marks every cell.
-  return solutionLine.some(Boolean) || playerLine.every((cell) => cell === -1);
+function lineMatchesClues(playerLine, expectedClues) {
+  const currentClues = getClues(playerLine.map((cell) => cell === 1));
+  return currentClues.length === expectedClues.length
+    && currentClues.every((value, index) => value === expectedClues[index]);
 }
 
 function updateClueCompletion() {
   if (state.solution.length !== state.size || state.player.length !== state.size) return;
+  const { rowClues, colClues } = getAllClues();
 
   for (let row = 0; row < state.size; row += 1) {
-    const solved = isLineComplete(state.player[row], state.solution[row]);
+    const solved = lineMatchesClues(state.player[row], rowClues[row]);
     grid.querySelector(`[data-row-clue="${row}"]`)?.classList.toggle("solved", solved);
   }
 
   for (let col = 0; col < state.size; col += 1) {
     const playerColumn = state.player.map((row) => row[col]);
-    const solutionColumn = state.solution.map((row) => row[col]);
-    const solved = isLineComplete(playerColumn, solutionColumn);
+    const solved = lineMatchesClues(playerColumn, colClues[col]);
     grid.querySelector(`[data-col-clue="${col}"]`)?.classList.toggle("solved", solved);
   }
 }
