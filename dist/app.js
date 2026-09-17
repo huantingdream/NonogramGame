@@ -356,6 +356,30 @@ function renderPlayerState() {
     const label = value === 1 ? "已填色" : value === -1 ? "已标为空格" : "空白";
     cell.setAttribute("aria-label", `第 ${row + 1} 行，第 ${col + 1} 列，${label}`);
   });
+  updateClueCompletion();
+}
+
+function isLineComplete(playerLine, solutionLine) {
+  const matches = solutionLine.every((filled, index) => (playerLine[index] === 1) === filled);
+  if (!matches) return false;
+  // Empty lines should only complete after the player explicitly marks every cell.
+  return solutionLine.some(Boolean) || playerLine.every((cell) => cell === -1);
+}
+
+function updateClueCompletion() {
+  if (state.solution.length !== state.size || state.player.length !== state.size) return;
+
+  for (let row = 0; row < state.size; row += 1) {
+    const solved = isLineComplete(state.player[row], state.solution[row]);
+    grid.querySelector(`[data-row-clue="${row}"]`)?.classList.toggle("solved", solved);
+  }
+
+  for (let col = 0; col < state.size; col += 1) {
+    const playerColumn = state.player.map((row) => row[col]);
+    const solutionColumn = state.solution.map((row) => row[col]);
+    const solved = isLineComplete(playerColumn, solutionColumn);
+    grid.querySelector(`[data-col-clue="${col}"]`)?.classList.toggle("solved", solved);
+  }
 }
 
 function setCluesCompleted(completed) {
@@ -543,23 +567,38 @@ document.querySelector(".tool-switch").addEventListener("click", (event) => {
 
 grid.addEventListener("pointerdown", (event) => {
   const cell = event.target.closest(".cell");
-  if (!cell) return;
+  if (!cell || state.completed || state.generating) return;
   event.preventDefault();
   state.isPointerDown = true;
-  state.dragValue = event.button === 2 ? -1 : (state.tool === "fill" ? 1 : -1);
+  const row = Number(cell.dataset.row);
+  const col = Number(cell.dataset.col);
+  const requestedValue = event.button === 2 ? -1 : (state.tool === "fill" ? 1 : -1);
+  state.dragValue = state.player[row][col] === requestedValue ? 0 : requestedValue;
   pushHistory();
   applyTool(cell, state.dragValue, { recordHistory: false });
 });
 
-grid.addEventListener("pointerover", (event) => {
-  const cell = event.target.closest(".cell");
+function continuePointerDrag(cell) {
   if (!state.isPointerDown || !cell) return;
   const row = Number(cell.dataset.row);
   const col = Number(cell.dataset.col);
   if (state.player[row][col] !== state.dragValue) applyTool(cell, state.dragValue, { recordHistory: false });
+}
+
+grid.addEventListener("pointerover", (event) => {
+  continuePointerDrag(event.target.closest(".cell"));
+});
+
+grid.addEventListener("pointermove", (event) => {
+  if (!state.isPointerDown) return;
+  event.preventDefault();
+  const target = document.elementFromPoint(event.clientX, event.clientY);
+  continuePointerDrag(target?.closest(".cell"));
 });
 
 window.addEventListener("pointerup", () => { state.isPointerDown = false; state.dragValue = null; });
+window.addEventListener("pointercancel", () => { state.isPointerDown = false; state.dragValue = null; });
+window.addEventListener("blur", () => { state.isPointerDown = false; state.dragValue = null; });
 grid.addEventListener("contextmenu", (event) => event.preventDefault());
 grid.addEventListener("keydown", (event) => {
   const cell = event.target.closest(".cell");

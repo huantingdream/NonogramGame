@@ -9,7 +9,7 @@
       content="一个简单易懂、可自动生成题目的 Nonogram 数织小游戏。"
     />
     <title>格间 · Nonogram</title>
-    <link rel="stylesheet" href="./styles.css?v=20260917-3" />
+    <link rel="stylesheet" href="./styles.css?v=20260917-4" />
   </head>
   <body>
     <main class="app-shell">
@@ -94,7 +94,7 @@
               <button class="submit-button" id="submitButton" type="button">提交答案</button>
             </div>
           </div>
-          <p class="desktop-tip">再次点击可取消 · 按住拖动可连续操作 · ⌘/Ctrl + Z 撤回</p>
+          <p class="desktop-tip">再次点击可取消 · 按住拖动可连续填／擦 · 右键标记或取消 × · ⌘/Ctrl + Z 撤回</p>
         </section>
       </section>
     </main>
@@ -108,7 +108,7 @@
         <span class="demo-cell filled"></span><span class="demo-cell filled"></span><span class="demo-cell crossed">×</span><span class="demo-cell filled"></span><span class="demo-cell crossed">×</span>
       </div>
       <p>每个数字代表一组连续填色格。多组数字之间，至少隔一个空格。</p>
-      <p>选择“填色”画出图案；确定某格为空时，用“×”标记。再次点击同一格可取消，点错也可以随时撤回。</p>
+      <p>选择“填色”画出图案；确定某格为空时，用“×”标记。再次点击或按住拖动可连续取消，右键也能标记或取消“×”。</p>
       <p>作答过程中不会提示对错。完成后点击“提交答案”，一次检查整张棋盘。</p>
       <button class="primary-button" type="button" data-close-modal>开始游戏</button>
     </dialog>
@@ -122,6 +122,6 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=20260917-2"></script>
+    <script src="./app.js?v=20260917-4"></script>
   </body>
 </html>
