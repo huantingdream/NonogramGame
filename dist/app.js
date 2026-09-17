@@ -47,8 +47,158 @@ function makeSeededRandom(seed) {
   };
 }
 
-function generateSolution(size, config) {
-  const seed = Date.now() ^ Math.floor(Math.random() * 0xffffffff);
+function generateLinePatterns(length, rawClues) {
+  const clues = rawClues.length === 1 && rawClues[0] === 0 ? [] : rawClues;
+  if (clues.length === 0) return [0];
+
+  const patterns = [];
+  const remainingLengths = clues.map((_, index) => {
+    const blocks = clues.slice(index + 1).reduce((total, clue) => total + clue, 0);
+    const separators = Math.max(clues.length - index - 1, 0);
+    return blocks + separators;
+  });
+
+  function placeBlock(blockIndex, start, mask) {
+    if (blockIndex === clues.length) {
+      patterns.push(mask);
+      return;
+    }
+
+    const blockLength = clues[blockIndex];
+    const lastStart = length - blockLength - remainingLengths[blockIndex];
+    for (let position = start; position <= lastStart; position += 1) {
+      const blockMask = ((1 << blockLength) - 1) << position;
+      placeBlock(blockIndex + 1, position + blockLength + 1, mask | blockMask);
+    }
+  }
+
+  placeBlock(0, 0, 0);
+  return patterns;
+}
+
+function patternMatchesLine(pattern, line) {
+  return line.every((cell, index) => cell === -1 || cell === ((pattern >> index) & 1));
+}
+
+function propagatePuzzle(cells, rowCandidates, colCandidates) {
+  const size = cells.length;
+  const fullMask = (1 << size) - 1;
+  let changed = true;
+
+  const setCell = (row, col, value) => {
+    if (cells[row][col] !== -1 && cells[row][col] !== value) return false;
+    if (cells[row][col] === -1) {
+      cells[row][col] = value;
+      changed = true;
+    }
+    return true;
+  };
+
+  while (changed) {
+    changed = false;
+
+    for (let row = 0; row < size; row += 1) {
+      rowCandidates[row] = rowCandidates[row].filter((pattern) => patternMatchesLine(pattern, cells[row]));
+      if (rowCandidates[row].length === 0) return false;
+
+      let alwaysFilled = fullMask;
+      let sometimesFilled = 0;
+      rowCandidates[row].forEach((pattern) => {
+        alwaysFilled &= pattern;
+        sometimesFilled |= pattern;
+      });
+
+      for (let col = 0; col < size; col += 1) {
+        const bit = 1 << col;
+        if ((alwaysFilled & bit) !== 0 && !setCell(row, col, 1)) return false;
+        if ((sometimesFilled & bit) === 0 && !setCell(row, col, 0)) return false;
+      }
+    }
+
+    for (let col = 0; col < size; col += 1) {
+      const column = cells.map((row) => row[col]);
+      colCandidates[col] = colCandidates[col].filter((pattern) => patternMatchesLine(pattern, column));
+      if (colCandidates[col].length === 0) return false;
+
+      let alwaysFilled = fullMask;
+      let sometimesFilled = 0;
+      colCandidates[col].forEach((pattern) => {
+        alwaysFilled &= pattern;
+        sometimesFilled |= pattern;
+      });
+
+      for (let row = 0; row < size; row += 1) {
+        const bit = 1 << row;
+        if ((alwaysFilled & bit) !== 0 && !setCell(row, col, 1)) return false;
+        if ((sometimesFilled & bit) === 0 && !setCell(row, col, 0)) return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+function countPuzzleSolutions(solution, limit = 2, nodeLimit = 8000) {
+  const size = solution.length;
+  const rowClues = solution.map(getClues);
+  const colClues = Array.from({ length: size }, (_, col) => getClues(solution.map((row) => row[col])));
+  const initialRows = rowClues.map((clues) => generateLinePatterns(size, clues));
+  const initialCols = colClues.map((clues) => generateLinePatterns(size, clues));
+  const initialCells = Array.from({ length: size }, () => Array(size).fill(-1));
+  let visitedNodes = 0;
+
+  function search(cells, rowCandidates, colCandidates) {
+    visitedNodes += 1;
+    // Treat an expensive/unknown puzzle as non-unique so it is never shown.
+    if (visitedNodes > nodeLimit) return limit;
+    if (!propagatePuzzle(cells, rowCandidates, colCandidates)) return 0;
+
+    let branchType = null;
+    let branchIndex = -1;
+    let branchPatterns = null;
+
+    rowCandidates.forEach((patterns, index) => {
+      if (patterns.length > 1 && (!branchPatterns || patterns.length < branchPatterns.length)) {
+        branchType = "row";
+        branchIndex = index;
+        branchPatterns = patterns;
+      }
+    });
+    colCandidates.forEach((patterns, index) => {
+      if (patterns.length > 1 && (!branchPatterns || patterns.length < branchPatterns.length)) {
+        branchType = "col";
+        branchIndex = index;
+        branchPatterns = patterns;
+      }
+    });
+
+    if (!branchPatterns) return 1;
+
+    let total = 0;
+    for (const pattern of branchPatterns) {
+      const nextCells = cells.map((row) => [...row]);
+      const nextRows = rowCandidates.map((patterns) => [...patterns]);
+      const nextCols = colCandidates.map((patterns) => [...patterns]);
+
+      if (branchType === "row") {
+        for (let col = 0; col < size; col += 1) nextCells[branchIndex][col] = (pattern >> col) & 1;
+        nextRows[branchIndex] = [pattern];
+      } else {
+        for (let row = 0; row < size; row += 1) nextCells[row][branchIndex] = (pattern >> row) & 1;
+        nextCols[branchIndex] = [pattern];
+      }
+
+      total += search(nextCells, nextRows, nextCols);
+      if (total >= limit) return limit;
+    }
+
+    return total;
+  }
+
+  return search(initialCells, initialRows, initialCols);
+}
+
+function buildCandidateSolution(size, config, seed) {
   const random = makeSeededRandom(seed);
   const solution = Array.from({ length: size }, () => Array(size).fill(false));
   const center = (size - 1) / 2;
@@ -72,7 +222,37 @@ function generateSolution(size, config) {
     if (column.every((cell) => !cell)) solution[Math.floor(random() * size)][index] = true;
   }
 
-  return { solution, seed };
+  return solution;
+}
+
+function buildGuaranteedUniqueFallback(size, seed) {
+  const random = makeSeededRandom(seed);
+  const solution = Array.from({ length: size }, () => Array(size).fill(false));
+  let filledRows = 0;
+
+  for (let row = 0; row < size; row += 1) {
+    const filled = random() > 0.45;
+    solution[row].fill(filled);
+    if (filled) filledRows += 1;
+  }
+
+  if (filledRows === 0) solution[Math.floor(random() * size)].fill(true);
+  if (filledRows === size) solution[Math.floor(random() * size)].fill(false);
+  return solution;
+}
+
+function generateSolution(size, config) {
+  const baseSeed = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+  const maxAttempts = size === 5 ? 80 : size === 10 ? 50 : 35;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const seed = (baseSeed + Math.imul(attempt, 2654435761)) >>> 0;
+    const solution = buildCandidateSolution(size, config, seed);
+    if (countPuzzleSolutions(solution) === 1) return { solution, seed };
+  }
+
+  const fallbackSeed = (baseSeed + 2246822519) >>> 0;
+  return { solution: buildGuaranteedUniqueFallback(size, fallbackSeed), seed: fallbackSeed };
 }
 
 function getClues(line) {
