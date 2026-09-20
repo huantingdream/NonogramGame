@@ -1,3 +1,5 @@
+/* 外壳与共享组件：顶栏、游戏切换、控制面板、棋盘卡片、弹窗、排行榜、Toast。 */
+
 :root {
   color-scheme: light;
   --ink: #0e193c;
@@ -38,8 +40,10 @@ button { color: inherit; }
 
 .topbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 10px 16px;
   min-height: 58px;
   margin-bottom: 22px;
 }
@@ -50,6 +54,33 @@ button { color: inherit; }
 .brand-mark i:nth-child(2), .brand-mark i:nth-child(3) { background: var(--lime); }
 .brand strong { display: block; font-size: 1.2rem; line-height: 1; letter-spacing: 0.12em; }
 .brand small { display: block; margin-top: 4px; color: var(--muted); font-size: 0.68rem; letter-spacing: 0.2em; }
+
+/* 游戏切换 */
+.game-switcher {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #eff1f7;
+  border-radius: 12px;
+}
+.game-switcher button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 8px 16px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 800;
+  transition: 160ms ease;
+}
+.game-switcher button:hover { color: var(--ink); }
+.game-switcher button[aria-selected="true"] { color: var(--ink); background: var(--white); box-shadow: 0 3px 10px rgba(42, 50, 84, 0.12); }
+.game-icon { color: var(--blue); font-size: 1rem; }
 
 .topbar-actions { display: flex; align-items: center; gap: 6px; }
 .how-to-button, .topbar-button, .text-button {
@@ -178,49 +209,8 @@ h1 em { color: var(--lime); font-style: normal; }
 
 .board-stage { display: grid; place-items: center; flex: 1; min-height: 430px; padding: 18px 0; overflow: hidden; }
 .board-scroll { max-width: 100%; max-height: 100%; overflow: auto; scrollbar-width: thin; }
-.puzzle-grid {
-  display: grid;
-  width: max-content;
-  margin: auto;
-  border: 2px solid var(--ink);
-  border-radius: 4px;
-  background: var(--ink);
-  user-select: none;
-  touch-action: none;
-}
 
-.corner, .row-clue, .col-clue, .cell { background: var(--white); }
-.corner { display: grid; place-items: end; padding: 8px; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
-.corner span { display: grid; place-items: center; width: 22px; height: 22px; color: var(--white); background: var(--ink); border-radius: 50%; font-size: 0.7rem; font-weight: 800; }
-.row-clue, .col-clue { color: #354062; font-size: var(--clue-font-size, 13px); font-weight: 800; font-variant-numeric: tabular-nums; }
-.row-clue { display: flex; align-items: center; justify-content: flex-end; gap: 7px; padding: 0 10px; border-right: 2px solid var(--ink); border-bottom: 1px solid var(--line); }
-.col-clue { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; padding: 7px 0; border-right: 1px solid var(--line); border-bottom: 2px solid var(--ink); }
-.row-clue.solved, .col-clue.solved { color: #198754; background: #eef9f1; text-decoration: line-through; }
-
-.cell {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: var(--cell-size);
-  height: var(--cell-size);
-  padding: 0;
-  border: 0;
-  border-right: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  cursor: crosshair;
-  transition: background 90ms ease, transform 90ms ease;
-}
-.cell:hover { background: #edf2ff; }
-.cell.group-col { border-right-color: var(--ink); }
-.cell.group-row { border-bottom-color: var(--ink); }
-.cell.filled { background: var(--blue); box-shadow: inset 0 0 0 2px var(--white); }
-.cell.filled::after { content: ""; width: 34%; height: 34%; background: var(--lime); border-radius: 1px; transform: scale(0); animation: pop-in 180ms ease forwards; }
-.cell::before, .cell::after { pointer-events: none; }
-.cell.crossed { color: #7f89a4; font-size: calc(var(--cell-size) * 0.67); font-weight: 350; line-height: 1; }
-.cell.hinted::before { content: ""; position: absolute; inset: 2px; border: 2px solid var(--lime); pointer-events: none; }
-.cell:focus-visible { z-index: 1; outline: 3px solid var(--lime); outline-offset: -3px; }
-
-.board-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding-top: 15px; border-top: 1px solid var(--soft-line); }
+.board-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 18px; padding-top: 15px; border-top: 1px solid var(--soft-line); }
 .tool-switch { display: flex; gap: 5px; padding: 4px; background: #eff1f7; border-radius: 11px; }
 .tool-switch button { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 14px; color: var(--muted); background: transparent; border: 0; border-radius: 8px; cursor: pointer; font-size: 0.82rem; font-weight: 750; }
 .tool-switch button[aria-checked="true"] { color: var(--ink); background: var(--white); box-shadow: 0 3px 10px rgba(42, 50, 84, 0.1); }
@@ -276,6 +266,7 @@ h1 em { color: var(--lime); font-style: normal; }
 .modal-kicker { color: var(--blue); }
 .modal h2 { margin: 8px 0 18px; font-size: 1.8rem; }
 .modal p { color: var(--muted); font-size: 0.92rem; line-height: 1.7; }
+.modal p strong { color: var(--ink); }
 .modal .primary-button { margin-top: 16px; background: var(--blue); color: var(--white); }
 .example-row { display: flex; align-items: center; gap: 4px; margin: 22px 0; }
 .example-row strong { margin-right: 10px; }
@@ -325,7 +316,7 @@ h1 em { color: var(--lime); font-style: normal; }
 .signed-in-panel p { margin-top: 0; word-break: break-all; }
 
 .leaderboard-modal { width: min(560px, calc(100% - 24px)); }
-.leaderboard-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.leaderboard-filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
 .leaderboard-filters label { display: grid; gap: 6px; text-align: left; }
 .leaderboard-state { min-height: 25px; margin: 6px 0; color: var(--muted); font-size: 0.8rem; }
 .leaderboard-list { margin: 0; padding: 0; list-style: none; }
@@ -342,6 +333,7 @@ h1 em { color: var(--lime); font-style: normal; }
 
 @keyframes pop-in { to { transform: scale(1); } }
 @keyframes generating-spin { to { transform: rotate(360deg); } }
+
 @media (max-width: 980px) {
   .app-shell { padding: 18px; }
   .game-layout { grid-template-columns: 1fr; }
@@ -353,9 +345,12 @@ h1 em { color: var(--lime); font-style: normal; }
 
 @media (max-width: 620px) {
   .app-shell { padding: 10px; }
-  .topbar { margin-bottom: 12px; }
-  .topbar-actions { gap: 1px; }
-  .topbar-button, .how-to-button { min-height: 38px; padding: 7px 8px; font-size: 0.75rem; }
+  .topbar { justify-content: center; gap: 8px 6px; margin-bottom: 12px; }
+  .topbar .brand { margin-right: auto; }
+  .topbar-actions { gap: 1px; margin-left: auto; }
+  .game-switcher { order: 3; display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
+  .game-switcher button { justify-content: center; padding-right: 6px; padding-left: 6px; }
+  .topbar-button, .how-to-button { min-height: 38px; padding: 7px 6px; font-size: 0.75rem; }
   .how-to-button { gap: 5px; }
   .how-to-button span { width: 20px; height: 20px; }
   .game-layout { gap: 12px; }
@@ -371,11 +366,6 @@ h1 em { color: var(--lime); font-style: normal; }
   .board-header h2 { font-size: 1.22rem; }
   .board-stage { min-height: clamp(320px, 48vh, 390px); padding: 12px 0; }
   .board-scroll { display: grid; place-items: center; width: 100%; overflow: hidden; }
-  .puzzle-grid { max-width: 100%; }
-  .row-clue { gap: 3px; padding: 0 5px; }
-  .col-clue { gap: 1px; padding: 4px 0; }
-  .corner { padding: 5px; }
-  .corner span { width: 20px; height: 20px; }
   .status-cluster { gap: 18px; }
   .status-cluster div + div::before { left: -10px; }
   .board-toolbar { align-items: stretch; flex-direction: column; gap: 10px; }
@@ -386,6 +376,7 @@ h1 em { color: var(--lime); font-style: normal; }
   .desktop-tip { display: none; }
   .toast { right: 14px; bottom: 14px; }
   .modal { padding: 28px 22px; }
+  .leaderboard-filters { grid-template-columns: 1fr 1fr; }
   .leaderboard-list li { grid-template-columns: 28px minmax(64px, 1fr) 52px; gap: 7px; }
   .leaderboard-list small { display: none; }
 }

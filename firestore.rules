@@ -6,11 +6,12 @@ service cloud.firestore {
     // ===============================================================
     //
     // Collection: scores
-    // Document ID: <uid>_<size>_<difficulty>_<puzzleSeed>
+    // Document ID: <uid>_<game>_<size>_<difficulty>_<puzzleSeed>
     // Fields:
     //   - uid: string (required, immutable, authenticated owner UID)
     //   - nickname: string (required, 1-20 chars, auth display name)
-    //   - size: int (required, one of 5/10/15)
+    //   - game: string (required, nonogram/sudoku/minesweeper)
+    //   - size: int (required, board size code: 5/9/10/15/81/256/480)
     //   - difficulty: string (required, easy/normal/hard)
     //   - elapsedSeconds: int (required, 1-86400)
     //   - puzzleId: int (required, 0-9999)
@@ -51,6 +52,7 @@ service cloud.firestore {
       let fields = [
         'uid',
         'nickname',
+        'game',
         'size',
         'difficulty',
         'elapsedSeconds',
@@ -67,8 +69,10 @@ service cloud.firestore {
         data.nickname.size() >= 1 &&
         data.nickname.size() <= 20 &&
         data.nickname == request.auth.token.name &&
+        data.game is string &&
+        data.game in ['nonogram', 'sudoku', 'minesweeper'] &&
         data.size is int &&
-        data.size in [5, 10, 15] &&
+        data.size in [5, 9, 10, 15, 81, 256, 480] &&
         data.difficulty is string &&
         data.difficulty in ['easy', 'normal', 'hard'] &&
         data.elapsedSeconds is int &&
@@ -96,7 +100,7 @@ service cloud.firestore {
       allow create: if isAuthenticated() &&
         isOwner(request.resource.data.uid) &&
         uidUnchanged() &&
-        scoreId.matches(request.auth.uid + '_(5|10|15)_(easy|normal|hard)_[0-9]+') &&
+        scoreId.matches(request.auth.uid + '_(nonogram|sudoku|minesweeper)_(5|9|10|15|81|256|480)_(easy|normal|hard)_[0-9]+') &&
         isValidScore(request.resource.data);
 
       // Scores are immutable. Replays use the same deterministic document ID.
