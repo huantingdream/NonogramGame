@@ -141,6 +141,7 @@
 .mine-cell:hover:not(.revealed) { background: #dfe6f4; }
 .mine-cell.revealed { background: var(--white); box-shadow: none; cursor: default; }
 .mine-cell.flagged { color: var(--danger); }
+.mine-cell.questioned { color: #8a6d1a; background: #fdf6dd; }
 .mine-cell.mine { color: var(--ink); background: #f6d9d9; }
 .mine-cell.exploded { color: var(--white); background: var(--danger); }
 .mine-cell[data-n="1"] { color: #1746d1; }
@@ -186,4 +187,6 @@
   /* 扫雷普通/困难在手机上允许横向滚动 */
   .board-scroll:has(.mine-grid) { display: block; overflow: auto; }
   .board-scroll:has(.mine-grid) .mine-grid { margin: 0 auto; }
+  /* 扫雷有三个模式按钮（翻开/插旗/疑问），手机上三等分 */
+  .tool-switch:has([data-mode="question"]) { grid-template-columns: repeat(3, 1fr); }
 }

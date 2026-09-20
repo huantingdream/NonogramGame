@@ -15,8 +15,9 @@ const state = {
   adjacent: null,    // 每格周围雷数
   revealed: null,    // boolean
   flags: null,       // boolean
+  questions: null,   // boolean，「？」疑问标记
   revealedCount: 0,
-  flagMode: false,
+  mode: "reveal",    // reveal / flag / question
   started: false,    // 是否已首击（雷已布置）
   over: false,
   won: false,
@@ -112,11 +113,13 @@ function renderPlayerState() {
       if (!cell) continue;
       const revealed = state.revealed[row][col];
       const flagged = state.flags[row][col];
+      const questioned = state.questions[row][col];
       const isMine = state.mineField && state.mineField[row][col];
       const showMine = state.over && isMine && !flagged;
 
       cell.classList.toggle("revealed", revealed);
       cell.classList.toggle("flagged", flagged && !revealed);
+      cell.classList.toggle("questioned", questioned && !revealed && !showMine);
       cell.classList.toggle("mine", Boolean(showMine));
       cell.classList.toggle("exploded", Boolean(state.over && !state.won && revealed && isMine));
 
@@ -126,14 +129,20 @@ function renderPlayerState() {
       } else if (revealed && state.adjacent[row][col] > 0) {
         cell.textContent = String(state.adjacent[row][col]);
         cell.dataset.n = state.adjacent[row][col];
+      } else if (!revealed && flagged) {
+        cell.textContent = "⚑";
+        cell.removeAttribute("data-n");
+      } else if (!revealed && questioned) {
+        cell.textContent = "？";
+        cell.removeAttribute("data-n");
       } else {
-        cell.textContent = flagged && !revealed ? "⚑" : "";
+        cell.textContent = "";
         cell.removeAttribute("data-n");
       }
 
       const label = revealed
         ? (isMine ? "雷" : state.adjacent[row][col] === 0 ? "空白" : `周围 ${state.adjacent[row][col]} 颗雷`)
-        : flagged ? "已插旗" : "未翻开";
+        : flagged ? "已插旗" : questioned ? "已标记疑问" : "未翻开";
       cell.setAttribute("aria-label", `第 ${row + 1} 行，第 ${col + 1} 列，${label}`);
     }
   }
@@ -151,6 +160,8 @@ function updateMineCounter() {
 
 function reveal(row, col) {
   if (state.over || state.revealed[row][col] || state.flags[row][col]) return;
+  // 「？」只是备忘标记，不阻止翻开；翻开时顺手清掉。
+  state.questions[row][col] = false;
 
   if (!state.started) {
     state.started = true;
@@ -173,6 +184,7 @@ function reveal(row, col) {
     if (r < 0 || r >= rows || c < 0 || c >= cols) continue;
     if (state.revealed[r][c] || state.flags[r][c]) continue;
     state.revealed[r][c] = true;
+    state.questions[r][c] = false;
     state.revealedCount += 1;
     if (state.adjacent[r][c] === 0) {
       for (let dr = -1; dr <= 1; dr += 1) {
@@ -187,9 +199,31 @@ function reveal(row, col) {
   checkWin();
 }
 
-function toggleFlag(row, col) {
+// 右键循环：无标记 → 插旗 → ？→ 无标记（经典扫雷行为）。
+function cycleMark(row, col) {
   if (state.over || state.revealed[row][col]) return;
-  state.flags[row][col] = !state.flags[row][col];
+  if (!state.flags[row][col] && !state.questions[row][col]) {
+    state.flags[row][col] = true;
+  } else if (state.flags[row][col]) {
+    state.flags[row][col] = false;
+    state.questions[row][col] = true;
+  } else {
+    state.questions[row][col] = false;
+  }
+  renderPlayerState();
+  updateMineCounter();
+}
+
+// 工具栏「插旗」/「？」模式下的单击：直接设置对应标记，再点取消。
+function toggleMark(row, col, mark) {
+  if (state.over || state.revealed[row][col]) return;
+  if (mark === "flag") {
+    state.flags[row][col] = !state.flags[row][col];
+    if (state.flags[row][col]) state.questions[row][col] = false;
+  } else {
+    state.questions[row][col] = !state.questions[row][col];
+    if (state.questions[row][col]) state.flags[row][col] = false;
+  }
   renderPlayerState();
   updateMineCounter();
 }
@@ -210,7 +244,10 @@ function gameOver(won) {
     // 自动给剩余的雷插旗，展示干净的结果。
     for (let row = 0; row < rows; row += 1) {
       for (let col = 0; col < cols; col += 1) {
-        if (state.mineField[row][col]) state.flags[row][col] = true;
+        if (state.mineField[row][col]) {
+          state.flags[row][col] = true;
+          state.questions[row][col] = false;
+        }
       }
     }
     renderPlayerState();
@@ -239,6 +276,7 @@ function newGame() {
   state.adjacent = null;
   state.revealed = Array.from({ length: config().rows }, () => Array(config().cols).fill(false));
   state.flags = Array.from({ length: config().rows }, () => Array(config().cols).fill(false));
+  state.questions = Array.from({ length: config().rows }, () => Array(config().cols).fill(false));
   state.revealedCount = 0;
   state.started = false;
   state.over = false;
@@ -297,23 +335,26 @@ function mountControlPanel() {
 function mountToolbar() {
   ctx.els.boardToolbar.innerHTML = `
     <div class="tool-switch" role="radiogroup" aria-label="操作方式">
-      <button type="button" role="radio" aria-checked="${!state.flagMode}" data-mode="reveal">
+      <button type="button" role="radio" aria-checked="${state.mode === "reveal"}" data-mode="reveal">
         <span aria-hidden="true">⛏</span> 翻开
       </button>
-      <button type="button" role="radio" aria-checked="${state.flagMode}" data-mode="flag">
+      <button type="button" role="radio" aria-checked="${state.mode === "flag"}" data-mode="flag">
         <span aria-hidden="true">⚑</span> 插旗
+      </button>
+      <button type="button" role="radio" aria-checked="${state.mode === "question"}" data-mode="question">
+        <span aria-hidden="true">？</span> 疑问
       </button>
     </div>
     <div class="board-actions">
       <span class="mine-counter" title="剩余雷数"><span aria-hidden="true">✸</span><strong id="mineCounter">${config().mines}</strong></span>
     </div>
   `;
-  ctx.els.desktopTip.textContent = "左键翻开 · 右键插旗 · 手机可切换到「插旗」模式 · 翻开全部安全格即获胜";
+  ctx.els.desktopTip.textContent = "左键翻开 · 右键循环：插旗 → ？→ 取消 · 翻开全部安全格即获胜";
 
   ctx.els.boardToolbar.querySelector(".tool-switch").addEventListener("click", (event) => {
     const button = event.target.closest("button[data-mode]");
     if (!button) return;
-    state.flagMode = button.dataset.mode === "flag";
+    state.mode = button.dataset.mode;
     selectOption(event.currentTarget, button);
   });
 
@@ -329,7 +370,7 @@ function mountBoard() {
     if (!cell || state.over) return;
     const row = Number(cell.dataset.row);
     const col = Number(cell.dataset.col);
-    if (state.flagMode) toggleFlag(row, col);
+    if (state.mode === "flag" || state.mode === "question") toggleMark(row, col, state.mode);
     else reveal(row, col);
   });
 
@@ -337,7 +378,7 @@ function mountBoard() {
     event.preventDefault();
     const cell = event.target.closest(".mine-cell");
     if (!cell || state.over) return;
-    toggleFlag(Number(cell.dataset.row), Number(cell.dataset.col));
+    cycleMark(Number(cell.dataset.row), Number(cell.dataset.col));
   });
 }
 
@@ -352,7 +393,7 @@ export default {
   howToTitle: "数字告诉你雷在哪",
   howTo: `
     <p>棋盘下埋着若干颗雷。翻开一个安全格后，<strong>数字表示周围 8 格里有多少颗雷</strong>。</p>
-    <p>用推理找出所有安全格并翻开它们即获胜；确定是雷的格子可以插旗（右键或「插旗」模式）做标记。</p>
+    <p>用推理找出所有安全格并翻开它们即获胜。确定是雷的格子可以<strong>插旗</strong>；拿不准的格子可以打<strong>「？」</strong>做备忘（右键循环：插旗 → ？→ 取消），「？」不影响胜负，随时可以翻开。</p>
     <p>第一次点击永远不会踩雷。点到雷本局立即结束，可以马上开新一局。</p>
   `,
   sizes: [
