@@ -15,7 +15,7 @@ const state = {
   adjacent: null,    // 每格周围雷数
   revealed: null,    // boolean
   flags: null,       // boolean
-  questions: null,   // boolean，「？」疑问标记
+  questions: null,   // boolean，「?」疑问标记
   revealedCount: 0,
   mode: "reveal",    // reveal / flag / question
   started: false,    // 是否已首击（雷已布置）
@@ -133,7 +133,7 @@ function renderPlayerState() {
         cell.textContent = "⚑";
         cell.removeAttribute("data-n");
       } else if (!revealed && questioned) {
-        cell.textContent = "？";
+        cell.textContent = "?";
         cell.removeAttribute("data-n");
       } else {
         cell.textContent = "";
@@ -160,7 +160,7 @@ function updateMineCounter() {
 
 function reveal(row, col) {
   if (state.over || state.revealed[row][col] || state.flags[row][col]) return;
-  // 「？」只是备忘标记，不阻止翻开；翻开时顺手清掉。
+  // 「?」只是备忘标记，不阻止翻开；翻开时顺手清掉。
   state.questions[row][col] = false;
 
   if (!state.started) {
@@ -199,7 +199,7 @@ function reveal(row, col) {
   checkWin();
 }
 
-// 右键循环：无标记 → 插旗 → ？→ 无标记（经典扫雷行为）。
+// 右键循环：无标记 → 插旗 → ? → 无标记（经典扫雷行为）。
 function cycleMark(row, col) {
   if (state.over || state.revealed[row][col]) return;
   if (!state.flags[row][col] && !state.questions[row][col]) {
@@ -214,7 +214,7 @@ function cycleMark(row, col) {
   updateMineCounter();
 }
 
-// 工具栏「插旗」/「？」模式下的单击：直接设置对应标记，再点取消。
+// 工具栏「插旗」/「?」模式下的单击：直接设置对应标记，再点取消。
 function toggleMark(row, col, mark) {
   if (state.over || state.revealed[row][col]) return;
   if (mark === "flag") {
@@ -342,14 +342,14 @@ function mountToolbar() {
         <span aria-hidden="true">⚑</span> 插旗
       </button>
       <button type="button" role="radio" aria-checked="${state.mode === "question"}" data-mode="question">
-        <span aria-hidden="true">？</span> 疑问
+        <span aria-hidden="true">?</span> 疑问
       </button>
     </div>
     <div class="board-actions">
       <span class="mine-counter" title="剩余雷数"><span aria-hidden="true">✸</span><strong id="mineCounter">${config().mines}</strong></span>
     </div>
   `;
-  ctx.els.desktopTip.textContent = "左键翻开 · 右键循环：插旗 → ？→ 取消 · 翻开全部安全格即获胜";
+  ctx.els.desktopTip.textContent = "左键翻开 · 右键循环：插旗 → ? → 取消 · 翻开全部安全格即获胜";
 
   ctx.els.boardToolbar.querySelector(".tool-switch").addEventListener("click", (event) => {
     const button = event.target.closest("button[data-mode]");
@@ -393,7 +393,7 @@ export default {
   howToTitle: "数字告诉你雷在哪",
   howTo: `
     <p>棋盘下埋着若干颗雷。翻开一个安全格后，<strong>数字表示周围 8 格里有多少颗雷</strong>。</p>
-    <p>用推理找出所有安全格并翻开它们即获胜。确定是雷的格子可以<strong>插旗</strong>；拿不准的格子可以打<strong>「？」</strong>做备忘（右键循环：插旗 → ？→ 取消），「？」不影响胜负，随时可以翻开。</p>
+    <p>用推理找出所有安全格并翻开它们即获胜。确定是雷的格子可以<strong>插旗</strong>；拿不准的格子可以打<strong>「?」</strong>做备忘（右键循环：插旗 → ? → 取消），「?」不影响胜负，随时可以翻开。</p>
     <p>第一次点击永远不会踩雷。点到雷本局立即结束，可以马上开新一局。</p>
   `,
   sizes: [
