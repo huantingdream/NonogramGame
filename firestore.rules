@@ -10,8 +10,8 @@ service cloud.firestore {
     // Fields:
     //   - uid: string (required, immutable, authenticated owner UID)
     //   - nickname: string (required, 1-20 chars, auth display name)
-    //   - game: string (required, nonogram/sudoku/minesweeper)
-    //   - size: int (required, board size code: 5/9/10/15/81/256/480)
+    //   - game: string (required, nonogram/sudoku/minesweeper/2048/slitherlink/hashi)
+    //   - size: int (required, board size code: 5/9/10/15/16/81/105/107/207/209/256/480)
     //   - difficulty: string (required, easy/normal/hard)
     //   - elapsedSeconds: int (required, 1-86400)
     //   - puzzleId: int (required, 0-9999)
@@ -48,6 +48,19 @@ service cloud.firestore {
       return data.keys().hasOnly(fields);
     }
 
+    function isValidGameConfig(data) {
+      return (data.game == 'nonogram' && data.size in [5, 10, 15]) ||
+        (data.game == 'sudoku' && data.size == 9) ||
+        (data.game == 'minesweeper' && data.size in [81, 256, 480]) ||
+        (data.game == '2048' && data.size == 16 && data.difficulty == 'normal') ||
+        (data.game == 'slitherlink' &&
+          ((data.size == 105 && data.difficulty == 'easy') ||
+           (data.size == 107 && data.difficulty == 'normal'))) ||
+        (data.game == 'hashi' &&
+          ((data.size == 207 && data.difficulty == 'easy') ||
+           (data.size == 209 && data.difficulty == 'normal')));
+    }
+
     function isValidScore(data) {
       let fields = [
         'uid',
@@ -70,11 +83,12 @@ service cloud.firestore {
         data.nickname.size() <= 20 &&
         data.nickname == request.auth.token.name &&
         data.game is string &&
-        data.game in ['nonogram', 'sudoku', 'minesweeper'] &&
+        data.game in ['nonogram', 'sudoku', 'minesweeper', '2048', 'slitherlink', 'hashi'] &&
         data.size is int &&
-        data.size in [5, 9, 10, 15, 81, 256, 480] &&
+        data.size in [5, 9, 10, 15, 16, 81, 105, 107, 207, 209, 256, 480] &&
         data.difficulty is string &&
         data.difficulty in ['easy', 'normal', 'hard'] &&
+        isValidGameConfig(data) &&
         data.elapsedSeconds is int &&
         data.elapsedSeconds >= 1 &&
         data.elapsedSeconds <= 86400 &&
@@ -100,7 +114,7 @@ service cloud.firestore {
       allow create: if isAuthenticated() &&
         isOwner(request.resource.data.uid) &&
         uidUnchanged() &&
-        scoreId.matches(request.auth.uid + '_(nonogram|sudoku|minesweeper)_(5|9|10|15|81|256|480)_(easy|normal|hard)_[0-9]+') &&
+        scoreId.matches(request.auth.uid + '_(nonogram|sudoku|minesweeper|2048|slitherlink|hashi)_(5|9|10|15|16|81|105|107|207|209|256|480)_(easy|normal|hard)_[0-9]+') &&
         isValidScore(request.resource.data);
 
       // Scores are immutable. Replays use the same deterministic document ID.

@@ -90,8 +90,9 @@ export async function initFirebase() {
 
       async loadLeaderboard({ game, size, difficulty }) {
         if (!auth.currentUser) throw Object.assign(new Error("需要先登录"), { code: "auth-required" });
-        // 不按 game 字段过滤查询：三个游戏的 size 编码互不重叠
-        // （数织 5/10/15、数独 9、扫雷 81/256/480），且改造前的旧成绩
+        // 不按 game 字段过滤查询：各游戏的 size 编码互不重叠
+        // （数织 5/10/15、数独 9、扫雷 81/256/480、2048 16、
+        // 数回 105/107、数桥 207/209），且改造前的旧成绩
         // 没有 game 字段，客户端把它们归到数织，保证旧成绩不丢失。
         const scoresQuery = firestoreModule.query(
           firestoreModule.collection(db, "scores"),

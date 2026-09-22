@@ -6,11 +6,11 @@
     <meta name="theme-color" content="#143fbf" />
     <meta
       name="description"
-      content="格间小游戏合集：数织 Nonogram、数独、扫雷，可自动生成题目并支持排行榜。"
+      content="格间小游戏合集：数织 Nonogram、数独、扫雷、2048、数回、数桥，可自动生成题目并支持排行榜。"
     />
     <title>格间 · 小游戏合集</title>
-    <link rel="stylesheet" href="./css/base.css?v=20260920-1" />
-    <link rel="stylesheet" href="./css/games.css?v=20260920-1" />
+    <link rel="stylesheet" href="./css/base.css?v=20260922-2" />
+    <link rel="stylesheet" href="./css/games.css?v=20260922-2" />
   </head>
   <body>
     <main class="app-shell">
@@ -22,7 +22,12 @@
           <span><strong>格间</strong><small id="brandSubtitle">NONOGRAM</small></span>
         </a>
 
-        <nav class="game-switcher" id="gameSwitcher" role="tablist" aria-label="选择游戏"></nav>
+        <button class="game-picker-button" id="gamePickerButton" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="gamePickerModal">
+          <span class="game-icon" aria-hidden="true">▦</span>
+          <strong class="current-game-name">选择游戏</strong>
+          <span class="game-picker-label">切换游戏</span>
+          <span aria-hidden="true">⌄</span>
+        </button>
 
         <div class="topbar-actions">
           <button class="topbar-button" id="leaderboardButton" type="button">
@@ -63,6 +68,23 @@
         </section>
       </section>
     </main>
+
+    <dialog class="modal game-picker-modal" id="gamePickerModal" aria-labelledby="gamePickerTitle">
+      <button class="modal-close" type="button" data-close-picker aria-label="关闭游戏选择">×</button>
+      <span class="modal-kicker">GAME LIBRARY</span>
+      <h2 id="gamePickerTitle">今天，玩点什么？</h2>
+      <label class="game-search" for="gameSearch">
+        <span aria-hidden="true">⌕</span>
+        <input id="gameSearch" type="search" placeholder="搜索游戏名称，如数桥、2048" aria-label="搜索游戏" autocomplete="off" />
+      </label>
+      <div class="game-categories" id="gameCategories" role="group" aria-label="游戏分类"></div>
+      <div class="recent-games" id="recentGames" hidden>
+        <span>最近玩过</span><div class="recent-game-list"></div>
+      </div>
+      <p class="game-result-count" id="gameResultCount" role="status" aria-live="polite"></p>
+      <div class="game-library" id="gameLibrary" aria-label="游戏列表"></div>
+      <p class="game-search-empty" id="gameSearchEmpty" hidden>没有找到这款游戏，换个名称或分类试试。</p>
+    </dialog>
 
     <dialog class="modal" id="howToModal">
       <button class="modal-close" type="button" data-close-modal aria-label="关闭">×</button>
@@ -134,6 +156,6 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./js/main.js?v=20260920-1"></script>
+    <script type="module" src="./js/main.js?v=20260922-2"></script>
   </body>
 </html>

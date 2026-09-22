@@ -663,6 +663,7 @@ function mountBoard() {
   cleanups.push(() => window.removeEventListener("resize", onResize));
 
   const onUndoShortcut = (event) => {
+    if (document.querySelector("dialog[open]") || event.target.closest("input, textarea, select, [contenteditable]")) return;
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && !event.shiftKey) {
       event.preventDefault();
       undo();

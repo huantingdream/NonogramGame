@@ -6,12 +6,16 @@ import { initFirebase } from "./core/firebase.js";
 import { initAccount } from "./core/account.js";
 import { initVictory, showVictory } from "./core/victory.js";
 import { initLeaderboard } from "./core/leaderboard.js";
+import { initGamePicker } from "./core/game-picker.js";
 
 import nonogram from "./games/nonogram.js";
 import sudoku from "./games/sudoku.js";
 import minesweeper from "./games/minesweeper.js";
 
-const GAMES = [nonogram, sudoku, minesweeper];
+import twenty48 from "./games/twenty48.js";
+import { slitherlink, hashi } from "./games/line-puzzles.js";
+
+const GAMES = [nonogram, sudoku, minesweeper, twenty48, slitherlink, hashi];
 const STORAGE_KEY = "gejian:lastGame";
 
 const statusLabels = {
@@ -24,6 +28,7 @@ const statusLabels = {
 
 let currentGame = null;
 let currentGameId = null;
+let gamePicker;
 
 // ---------------------------------------------------------------------------
 // 计时与状态
@@ -84,9 +89,7 @@ function mountGame(gameId) {
   currentGame = game;
   currentGameId = game.id;
 
-  document.querySelectorAll("#gameSwitcher button").forEach((button) => {
-    button.setAttribute("aria-selected", button.dataset.game === game.id ? "true" : "false");
-  });
+  gamePicker.setActive(game);
   document.querySelector("#brandSubtitle").textContent = game.subtitle;
   document.title = `格间 · ${game.name}`;
   document.querySelector("#howToTitle").textContent = game.howToTitle;
@@ -98,19 +101,6 @@ function mountGame(gameId) {
   } catch (_) {}
 
   game.mount(buildGameContext(game));
-}
-
-function initGameSwitcher() {
-  const switcher = document.querySelector("#gameSwitcher");
-  switcher.innerHTML = GAMES.map((game) => `
-    <button type="button" role="tab" aria-selected="false" data-game="${game.id}">
-      <span class="game-icon" aria-hidden="true">${game.icon || "▦"}</span>${game.name}
-    </button>
-  `).join("");
-  switcher.addEventListener("click", (event) => {
-    const button = event.target.closest("button[data-game]");
-    if (button) mountGame(button.dataset.game);
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -128,7 +118,7 @@ function initHowToModal() {
   });
 }
 
-initGameSwitcher();
+gamePicker = initGamePicker({ games: GAMES, onSelect: mountGame });
 initHowToModal();
 initAccount();
 initVictory({
