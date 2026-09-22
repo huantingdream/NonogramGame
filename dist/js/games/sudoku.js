@@ -1,3 +1,4 @@
+import { pop, enterBoard } from '../core/motion.js';
 // 数独：9 × 9，每行、每列、每个 3 × 3 宫填入 1–9 且不重复。
 // 题目由种子确定性生成：先填出完整解，再在保证唯一解的前提下对称挖空。
 
@@ -174,6 +175,7 @@ function renderGrid() {
   }
 
   renderPlayerState();
+  enterBoard(grid);
 }
 
 function renderPlayerState() {
@@ -194,7 +196,11 @@ function renderPlayerState() {
     cell.classList.toggle("selected", Boolean(isSelected));
     cell.classList.toggle("related", Boolean(related) && !isSelected);
     cell.classList.toggle("same-value", Boolean(sameValue) && !isSelected);
-    cell.textContent = value === 0 ? "" : String(value);
+    const text = value === 0 ? "" : String(value);
+    if (cell.textContent !== text) {
+      cell.textContent = text;
+      if (!given) pop(cell);
+    }
     cell.setAttribute("aria-label", `第 ${row + 1} 行，第 ${col + 1} 列，${value === 0 ? "空白" : `数字 ${value}${given ? "，题目给出" : ""}`}`);
   });
 

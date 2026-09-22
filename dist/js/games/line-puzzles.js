@@ -1,3 +1,4 @@
+import { pop, enterBoard } from '../core/motion.js';
 import { randomSeed, makeSeededRandom } from '../core/utils.js';
 import { generateLoop, checkLoop, generateBridges, checkBridges, bridgeCounts, crosses } from './puzzle-logic.js';
 
@@ -9,35 +10,67 @@ function createLineGame(kind) {
   let ctx, controller, n = presets[0], puzzle, values, history, seed, won, markMode = false;
   const xy = (x, y) => `${(x + .5) * 100 / (loop ? n + 1 : n)}%, ${(y + .5) * 100 / (loop ? n + 1 : n)}%`;
   function position(x, y) { const [left, top] = xy(x, y).split(', '); return `left:${left};top:${top}`; }
-  function render() {
+  function render(reset = false) {
     const board = ctx.els.gameRoot.querySelector('.line-board'), span = loop ? n + 1 : n;
-    let drawing = '', buttons = '';
-    if (loop) {
-      puzzle.clues.forEach((v, i) => {
-        const count = puzzle.edges.reduce((sum, e, k) => sum + (e.cells.includes(i) && values[k] === 1 ? 1 : 0), 0);
-        buttons += `<span class="loop-clue ${count === v ? 'satisfied' : count > v ? 'overfull' : ''}" style="${position(i % n + .5, Math.floor(i / n) + .5)}">${v}</span>`;
-      });
-      for (let y = 0; y <= n; y++) for (let x = 0; x <= n; x++) drawing += `<circle cx="${x + .5}" cy="${y + .5}" r=".045" class="loop-dot"/>`;
-      puzzle.edges.forEach((e, i) => {
-        const ax = e.a % (n + 1) + .5, ay = Math.floor(e.a / (n + 1)) + .5, bx = e.b % (n + 1) + .5, by = Math.floor(e.b / (n + 1)) + .5;
-        drawing += `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" class="${values[i] === 1 ? 'drawn-line' : 'guide-line'}"/>`;
-        buttons += `<button type="button" class="edge-hit ${e.horizontal ? 'horizontal' : 'vertical'}" data-edge="${i}" style="${position(e.x, e.y)}" aria-label="${e.horizontal ? '横' : '竖'}边，第 ${Math.floor(e.y) + 1} 行第 ${Math.floor(e.x) + 1} 列，${values[i] === 1 ? '已画线' : values[i] === -1 ? '已排除' : '未标记'}" aria-pressed="${values[i] === 1}">${values[i] === -1 ? '×' : ''}</button>`;
-      });
-    } else {
-      const counts = bridgeCounts(puzzle, values);
-      puzzle.edges.forEach((e, i) => {
-        const a = puzzle.islands[e.a], b = puzzle.islands[e.b], horizontal = a.y === b.y;
-        const offsets = values[i] === 2 ? [-.06, .06] : [0];
-        offsets.forEach(offset => { drawing += `<line x1="${a.x+.5+(horizontal?0:offset)}" y1="${a.y+.5+(horizontal?offset:0)}" x2="${b.x+.5+(horizontal?0:offset)}" y2="${b.y+.5+(horizontal?offset:0)}" class="${values[i] ? 'drawn-line' : 'guide-line'}"/>`; });
-        const length = (Math.abs(a.x-b.x)+Math.abs(a.y-b.y)-.65)*100/span;
-        buttons += `<button type="button" class="edge-hit ${horizontal?'horizontal':'vertical'}" data-edge="${i}" style="${position((a.x+b.x)/2,(a.y+b.y)/2)};${horizontal?'width':'height'}:${length}%" aria-label="岛 ${e.a+1} 到岛 ${e.b+1}，${values[i]} 座桥" aria-pressed="${values[i]>0}"></button>`;
-      });
-      puzzle.islands.forEach((island, i) => { buttons += `<span class="bridge-island ${counts[i]===island.clue?'satisfied':counts[i]>island.clue?'overfull':''}" style="${position(island.x,island.y)}" aria-label="岛 ${i+1}，需要 ${island.clue} 座桥，已有 ${counts[i]} 座">${island.clue}</span>`; });
+    if (reset || !board.children.length) {
+      let drawing = '', buttons = '';
+      if (loop) {
+        puzzle.clues.forEach((v, i) => {
+          const count = puzzle.edges.reduce((sum, e, k) => sum + (e.cells.includes(i) && values[k] === 1 ? 1 : 0), 0);
+          buttons += `<span data-clue="${i}" class="loop-clue ${count === v ? 'satisfied' : count > v ? 'overfull' : ''}" style="${position(i % n + .5, Math.floor(i / n) + .5)}">${v}</span>`;
+        });
+        for (let y = 0; y <= n; y++) for (let x = 0; x <= n; x++) drawing += `<circle cx="${x + .5}" cy="${y + .5}" r=".045" class="loop-dot"/>`;
+        puzzle.edges.forEach((e, i) => {
+          const ax = e.a % (n + 1) + .5, ay = Math.floor(e.a / (n + 1)) + .5, bx = e.b % (n + 1) + .5, by = Math.floor(e.b / (n + 1)) + .5;
+          drawing += `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" class="guide-line"/><line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" pathLength="1" data-stroke="${i}-0" class="drawn-line animated-stroke"/>`;
+          buttons += `<button type="button" class="edge-hit ${e.horizontal ? 'horizontal' : 'vertical'}" data-edge="${i}" style="${position(e.x, e.y)}" aria-label="${e.horizontal ? '横' : '竖'}边，第 ${Math.floor(e.y) + 1} 行第 ${Math.floor(e.x) + 1} 列，${values[i] === 1 ? '已画线' : values[i] === -1 ? '已排除' : '未标记'}" aria-pressed="${values[i] === 1}">${values[i] === -1 ? '×' : ''}</button>`;
+        });
+      } else {
+        const counts = bridgeCounts(puzzle, values);
+        puzzle.edges.forEach((e, i) => {
+          const a = puzzle.islands[e.a], b = puzzle.islands[e.b], horizontal = a.y === b.y;
+          drawing += `<line x1="${a.x+.5}" y1="${a.y+.5}" x2="${b.x+.5}" y2="${b.y+.5}" class="guide-line"/>`;
+          const offsets = [0, .06];
+          offsets.forEach((offset, stroke) => { drawing += `<line x1="${a.x+.5+(horizontal?0:offset)}" y1="${a.y+.5+(horizontal?offset:0)}" x2="${b.x+.5+(horizontal?0:offset)}" y2="${b.y+.5+(horizontal?offset:0)}" pathLength="1" data-stroke="${i}-${stroke}" class="drawn-line animated-stroke"/>`; });
+          const length = (Math.abs(a.x-b.x)+Math.abs(a.y-b.y)-.65)*100/span;
+          buttons += `<button type="button" class="edge-hit ${horizontal?'horizontal':'vertical'}" data-edge="${i}" style="${position((a.x+b.x)/2,(a.y+b.y)/2)};${horizontal?'width':'height'}:${length}%" aria-label="岛 ${e.a+1} 到岛 ${e.b+1}，${values[i]} 座桥" aria-pressed="${values[i]>0}"></button>`;
+        });
+        puzzle.islands.forEach((island, i) => { buttons += `<span data-island="${i}" class="bridge-island ${counts[i]===island.clue?'satisfied':counts[i]>island.clue?'overfull':''}" style="${position(island.x,island.y)}" aria-label="岛 ${i+1}，需要 ${island.clue} 座桥，已有 ${counts[i]} 座">${island.clue}</span>`; });
+      }
+      const focused = board.contains(document.activeElement) ? document.activeElement.dataset.edge : null;
+      board.style.setProperty('--span', span);
+      board.innerHTML = `<svg viewBox="0 0 ${span} ${span}" aria-hidden="true">${drawing}</svg>${buttons}`;
+      if (focused != null) board.querySelector(`[data-edge="${focused}"]`)?.focus({ preventScroll:true });
+      enterBoard(board);
     }
-    const focused = board.contains(document.activeElement) ? document.activeElement.dataset.edge : null;
-    board.style.setProperty('--span', span);
-    board.innerHTML = `<svg viewBox="0 0 ${span} ${span}" aria-hidden="true">${drawing}</svg>${buttons}`;
-    if (focused != null) board.querySelector(`[data-edge="${focused}"]`)?.focus({ preventScroll:true });
+    // Keep the SVG and hit targets alive so transitions can run in either direction.
+    const counts = loop ? puzzle.clues.map((_, cell) => puzzle.edges.reduce((sum, edge, i) => sum + (edge.cells.includes(cell) && values[i] === 1 ? 1 : 0), 0)) : bridgeCounts(puzzle, values);
+    counts.forEach((count, i) => {
+      const label = board.querySelector(loop ? `[data-clue="${i}"]` : `[data-island="${i}"]`);
+      const clue = loop ? puzzle.clues[i] : puzzle.islands[i].clue;
+      const wasSatisfied = label.classList.contains('satisfied');
+      label.classList.toggle('satisfied', count === clue);
+      label.classList.toggle('overfull', count > clue);
+      if (!reset && !wasSatisfied && count === clue) pop(label);
+      if (!loop) label.setAttribute('aria-label', `岛 ${i+1}，需要 ${clue} 座桥，已有 ${count} 座`);
+    });
+    puzzle.edges.forEach((edge, i) => {
+      const button = board.querySelector(`[data-edge="${i}"]`);
+      const value = values[i];
+      button.setAttribute('aria-pressed', value > 0);
+      if (loop) {
+        const mark = value === -1 ? '×' : '';
+        if (button.textContent !== mark) { button.textContent = mark; if (mark) pop(button); }
+        button.setAttribute('aria-label', `${edge.horizontal ? '横' : '竖'}边，第 ${Math.floor(edge.y)+1} 行第 ${Math.floor(edge.x)+1} 列，${value === 1 ? '已画线' : value === -1 ? '已排除' : '未标记'}`);
+      } else button.setAttribute('aria-label', `岛 ${edge.a+1} 到岛 ${edge.b+1}，${value} 座桥`);
+      const first = board.querySelector(`[data-stroke="${i}-0"]`);
+      first.classList.toggle('is-drawn', value > 0);
+      if (!loop) {
+        const horizontal = puzzle.islands[edge.a].y === puzzle.islands[edge.b].y;
+        first.style.transform = value === 2 ? `translate(${horizontal ? '0, -.06px' : '-.06px, 0'})` : 'translate(0, 0)';
+        board.querySelector(`[data-stroke="${i}-1"]`).classList.toggle('is-drawn', value === 2);
+      }
+    });
     ctx.els.boardToolbar.querySelector('[data-action="undo"]').disabled = !history.length || won;
   }
   function edit(i, exclude = false) {
@@ -58,7 +91,7 @@ function createLineGame(kind) {
     ctx.closeVictory(); seed = randomSeed(); const random = makeSeededRandom(seed);
     puzzle = loop ? generateLoop(n,random) : generateBridges(n,random);
     values = puzzle.edges.map(()=>0); history = []; won = false;
-    ctx.timer.reset(); ctx.setStatus('idle'); ctx.setTitle(`${n} × ${n} · ${name}`); ctx.setPuzzleNumber(seed%10000); render();
+    ctx.timer.reset(); ctx.setStatus('idle'); ctx.setTitle(`${n} × ${n} · ${name}`); ctx.setPuzzleNumber(seed%10000); render(true);
   }
   return {
     id:kind, name, subtitle:loop?'SLITHERLINK':'HASHIWOKAKERO', icon:loop?'▱':'☷',

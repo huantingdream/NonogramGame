@@ -1,3 +1,4 @@
+import { pop, enterBoard } from '../core/motion.js';
 // 数织 Nonogram：根据行列数字线索填出隐藏图案。
 // 题目由种子确定性生成，并验证只有一个正确解。
 
@@ -334,6 +335,7 @@ function renderGrid() {
   });
 
   renderPlayerState();
+  enterBoard(grid);
 }
 
 function renderPlayerState() {
@@ -341,6 +343,9 @@ function renderPlayerState() {
     const row = Number(cell.dataset.row);
     const col = Number(cell.dataset.col);
     const value = state.player[row][col];
+    const previous = cell.dataset.value;
+    cell.dataset.value = value;
+    if (previous !== undefined && previous !== String(value)) pop(cell);
     cell.classList.toggle("filled", value === 1);
     cell.classList.toggle("crossed", value === -1);
     cell.textContent = value === -1 ? "×" : "";

@@ -1,3 +1,4 @@
+import { animate, pop, enterBoard } from '../core/motion.js';
 // 扫雷：点开所有安全格即获胜，点到雷就失败。
 // 第一次点击必定安全（雷在首击后才布置，并避开首击格及周围）。
 
@@ -103,9 +104,10 @@ function renderGrid() {
 
   renderPlayerState();
   updateMineCounter();
+  enterBoard(grid);
 }
 
-function renderPlayerState() {
+function renderPlayerState(origin = null) {
   const { rows, cols } = config();
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
@@ -117,6 +119,8 @@ function renderPlayerState() {
       const isMine = state.mineField && state.mineField[row][col];
       const showMine = state.over && isMine && !flagged;
 
+      const wasRevealed = cell.classList.contains("revealed");
+      const previousMark = cell.textContent;
       cell.classList.toggle("revealed", revealed);
       cell.classList.toggle("flagged", flagged && !revealed);
       cell.classList.toggle("questioned", questioned && !revealed && !showMine);
@@ -139,6 +143,14 @@ function renderPlayerState() {
         cell.textContent = "";
         cell.removeAttribute("data-n");
       }
+
+      if (revealed && !wasRevealed) {
+        const delay = origin ? Math.min(180, Math.hypot(row - origin[0], col - origin[1]) * 22) : 0;
+        animate(cell, [
+          { opacity: .3, scale: '.82', backgroundColor: '#e9edf6' },
+          { opacity: 1, scale: '1', backgroundColor: isMine ? '#e45050' : '#ffffff' }
+        ], { duration: 240, delay, fill: 'backwards' });
+      } else if (previousMark !== cell.textContent) pop(cell);
 
       const label = revealed
         ? (isMine ? "雷" : state.adjacent[row][col] === 0 ? "空白" : `周围 ${state.adjacent[row][col]} 颗雷`)
@@ -195,7 +207,7 @@ function reveal(row, col) {
     }
   }
 
-  renderPlayerState();
+  renderPlayerState([row, col]);
   checkWin();
 }
 

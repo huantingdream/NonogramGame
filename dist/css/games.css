@@ -202,3 +202,22 @@
 .edge-hit.horizontal {width:calc(74% / var(--span));height:calc(46% / var(--span));min-height:20px;}.edge-hit.vertical{height:calc(74% / var(--span));width:calc(46% / var(--span));min-width:20px;}.edge-hit:hover{background:#1746d114;}.edge-hit:focus-visible{outline:2px solid var(--blue);border-radius:4px;background:#1746d114;}
 .loop-clue,.bridge-island {position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;font-weight:800;color:var(--ink);font-size:clamp(15px,3.5vw,24px);}.loop-clue{pointer-events:none;}.bridge-island{width:calc(65% / var(--span));height:calc(65% / var(--span));background:white;border:2px solid var(--ink);border-radius:50%;z-index:3;font-size:clamp(13px,3.5vw,23px);}.satisfied{color:#198754;}.bridge-island.satisfied{background:#edf9ef;border-color:#198754;}.overfull{color:var(--danger);}.bridge-island.overfull{background:#fff0ef;border-color:var(--danger);}.tool-switch button[aria-pressed="true"]{background:white;color:var(--blue);box-shadow:0 2px 6px #15295315;}
 @media (max-width:620px){.tiles-grid{gap:7px;padding:9px;}.line-board{width:calc(100vw - 68px);}.bridge-island{border-width:1.5px;}}
+
+/* Short, interruptible feedback; cell coordinates remain stable for dragging. */
+.cell, .sudoku-cell, .mine-cell {
+  transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+.row-clue, .col-clue, .loop-clue, .bridge-island {
+  transition: color 220ms ease, background-color 220ms ease, border-color 220ms ease;
+}
+.tiles-grid { position: relative; }
+.tile-flight { position: absolute; z-index: 2; pointer-events: none; margin: 0; will-change: transform; }
+.animated-stroke {
+  stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0;
+  transition: stroke-dashoffset 230ms cubic-bezier(.2,.75,.25,1), opacity 180ms ease, transform 200ms ease;
+  pointer-events: none;
+}
+.animated-stroke.is-drawn { stroke-dashoffset: 0; opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .cell, .sudoku-cell, .mine-cell, .row-clue, .col-clue, .loop-clue, .bridge-island, .animated-stroke { transition: none; }
+}

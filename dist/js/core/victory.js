@@ -8,6 +8,7 @@ let pendingScore = null; // { game, size, difficulty, elapsedSeconds, puzzleId, 
 let scoreSubmitted = false;
 let scoreSubmitting = false;
 let onNextGame = null;
+let victoryTimeout = null;
 
 function els() {
   return {
@@ -74,6 +75,14 @@ export function reopenVictoryIfPending() {
   if (hasPendingScore()) els().modal.showModal();
 }
 
+// Cancel delayed presentation when restarting or switching games.
+export function closeVictory() {
+  window.clearTimeout(victoryTimeout);
+  victoryTimeout = null;
+  pendingScore = null;
+  if (els().modal.open) els().modal.close();
+}
+
 // score: { game, size, difficulty, elapsedSeconds, puzzleId, puzzleSeed }
 export function showVictory({ summary, score }) {
   const dom = els();
@@ -82,7 +91,8 @@ export function showVictory({ summary, score }) {
   scoreSubmitting = false;
   dom.summary.textContent = summary;
   updateScoreUi();
-  window.setTimeout(() => dom.modal.showModal(), 260);
+  window.clearTimeout(victoryTimeout);
+  victoryTimeout = window.setTimeout(() => dom.modal.showModal(), 260);
 }
 
 export function initVictory({ onNext }) {

@@ -4,8 +4,9 @@ import { createTimer } from "./core/timer.js";
 import { formatElapsed, showToast } from "./core/utils.js";
 import { initFirebase } from "./core/firebase.js";
 import { initAccount } from "./core/account.js";
-import { initVictory, showVictory } from "./core/victory.js";
+import { initVictory, showVictory, closeVictory } from "./core/victory.js";
 import { initLeaderboard } from "./core/leaderboard.js";
+import { animate, enterBoard, cancelMotion } from "./core/motion.js";
 import { initGamePicker } from "./core/game-picker.js";
 
 import nonogram from "./games/nonogram.js";
@@ -43,6 +44,9 @@ const gameStatus = document.querySelector("#gameStatus");
 function setStatus(tone, customLabel = null) {
   gameStatus.textContent = customLabel || statusLabels[tone] || tone;
   gameStatus.dataset.tone = tone;
+  if (tone === 'incorrect') animate(document.querySelector('#gameRoot'), [
+    { translate: '0 0' }, { translate: '-4px 0' }, { translate: '4px 0' }, { translate: '0 0' }
+  ], { duration: 240 });
 }
 
 // ---------------------------------------------------------------------------
@@ -67,12 +71,14 @@ function buildGameContext(game) {
       document.querySelector("#puzzleNumber").textContent = `PUZZLE #${String(id).padStart(4, "0")}`;
     },
     toast: showToast,
-    closeVictory() {
-      const modal = document.querySelector("#victoryModal");
-      if (modal.open) modal.close();
-    },
+    closeVictory,
     reportWin({ summary, score }) {
       setStatus("correct");
+      animate(document.querySelector('.board-card'), [
+        { boxShadow: '0 0 0 0 rgba(23,70,209,0)' },
+        { boxShadow: '0 0 0 5px rgba(23,70,209,.2)', offset: .4 },
+        { boxShadow: '0 0 0 0 rgba(23,70,209,0)' }
+      ], { duration: 500 });
       showVictory({ summary, score: { ...score, game: game.id } });
     }
   };
@@ -82,6 +88,8 @@ function mountGame(gameId) {
   const game = GAMES.find((item) => item.id === gameId) || GAMES[0];
   if (currentGameId === game.id) return;
 
+  closeVictory();
+  cancelMotion(document.querySelector(".game-layout"));
   if (currentGame) currentGame.unmount();
   timer.reset();
   setStatus("idle");
@@ -101,6 +109,8 @@ function mountGame(gameId) {
   } catch (_) {}
 
   game.mount(buildGameContext(game));
+  enterBoard(document.querySelector("#controlPanel"));
+  enterBoard(document.querySelector("#boardToolbar"));
 }
 
 // ---------------------------------------------------------------------------

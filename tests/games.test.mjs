@@ -42,3 +42,16 @@ test('bridges reject disconnected satisfied islands, crossings, and more than tw
   assert.equal(crosses({a:0,b:1},{a:2,b:3},[{x:0,y:1},{x:2,y:1},{x:1,y:0},{x:1,y:2}]),true);
   assert.equal(checkBridges({islands:islands.slice(0,2),edges:[{a:0,b:1}]},[3]),false);
 });
+
+test('2048 animation tracks preserve every tile and point to the computed destinations', async () => {
+  const { trace2048 } = await import('../dist/js/games/puzzle-logic.js');
+  const input = [2,2,2,2,4,0,4,8,0,2,0,2,8,8,16,0];
+  for (const direction of ['left','right','up','down']) {
+    const result = trace2048(input,direction);
+    assert.deepEqual(result.movements.map(m=>m.from).sort((a,b)=>a-b),input.map((v,i)=>v?i:-1).filter(i=>i>=0));
+    const destinationTotals=Array(16).fill(0);
+    result.movements.forEach(m=>{assert.equal(m.value,input[m.from]);destinationTotals[m.to]+=m.value;});
+    assert.deepEqual(destinationTotals,result.board);
+    assert.equal(result.merges.reduce((sum,i)=>sum+result.board[i],0),result.score);
+  }
+});

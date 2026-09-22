@@ -1,17 +1,25 @@
 // Pure rules shared by the boards and regression tests.
-export function move2048(board, direction) {
-  const next = board.slice();
+export function trace2048(board, direction) {
+  const next = board.slice(), movements = [], merges = [];
   let score = 0;
   for (let lane = 0; lane < 4; lane++) {
     const ids = Array.from({ length: 4 }, (_, k) => direction === 'left' ? lane * 4 + k : direction === 'right' ? lane * 4 + 3 - k : direction === 'up' ? k * 4 + lane : (3 - k) * 4 + lane);
-    const values = ids.map(i => board[i]).filter(Boolean), merged = [];
-    for (let k = 0; k < values.length; k++) {
-      if (values[k] === values[k + 1]) { merged.push(values[k] * 2); score += values[k] * 2; k++; }
-      else merged.push(values[k]);
+    const occupied = ids.filter(i => board[i]), merged = [];
+    for (let k = 0; k < occupied.length; k++) {
+      const from = occupied[k], to = ids[merged.length], value = board[from];
+      movements.push({ from, to, value });
+      if (k + 1 < occupied.length && value === board[occupied[k + 1]]) {
+        movements.push({ from: occupied[++k], to, value });
+        merged.push(value * 2); score += value * 2; merges.push(to);
+      } else merged.push(value);
     }
     ids.forEach((id, k) => { next[id] = merged[k] || 0; });
   }
-  return { board: next, score, changed: next.some((v, i) => v !== board[i]) };
+  return { board: next, score, changed: next.some((v, i) => v !== board[i]), movements, merges };
+}
+export function move2048(board, direction) {
+  const { board: next, score, changed } = trace2048(board, direction);
+  return { board: next, score, changed };
 }
 export function canMove2048(board) {
   return ['left', 'right', 'up', 'down'].some(d => move2048(board, d).changed);
