@@ -221,3 +221,6 @@
 @media (prefers-reduced-motion: reduce) {
   .cell, .sudoku-cell, .mine-cell, .row-clue, .col-clue, .loop-clue, .bridge-island, .animated-stroke { transition: none; }
 }
+/* Keep action labels on one line even inside a content-sized toolbar. */
+.board-actions > button { white-space: nowrap; flex-shrink: 0; }
+.board-actions > .secondary-button { width: auto; }
