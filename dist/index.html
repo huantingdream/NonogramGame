@@ -9,8 +9,8 @@
       content="格间小游戏合集：数织 Nonogram、数独、扫雷、2048、数回、数桥、反应测试、瞄准训练，可自动生成题目并支持排行榜。"
     />
     <title>格间 · 小游戏合集</title>
-    <link rel="stylesheet" href="./css/base.css?v=20260923-2" />
-    <link rel="stylesheet" href="./css/games.css?v=20260923-2" />
+    <link rel="stylesheet" href="./css/base.css?v=20260923-3" />
+    <link rel="stylesheet" href="./css/games.css?v=20260923-3" />
   </head>
   <body>
     <main class="app-shell">
@@ -104,6 +104,7 @@
       <div class="victory-score-card">
         <p id="victoryScoreMessage">登录后可以把成绩放进排行榜。</p>
         <button class="secondary-button" id="scoreActionButton" type="button">登录并上传成绩</button>
+        <p class="network-hint">☁ 成绩会上传到 Google（Firebase）数据库，需要可访问网络。</p>
       </div>
       <button class="primary-button" id="nextPuzzleButton" type="button">再来一题</button>
     </dialog>
@@ -132,6 +133,7 @@
           </label>
           <p class="form-message" id="authMessage" role="status" aria-live="polite"></p>
           <button class="primary-button" id="authSubmitButton" type="submit">登录</button>
+          <p class="network-hint">☁ 账号使用 Google（Firebase）数据库，注册 / 登录需要可访问网络。</p>
         </form>
       </div>
       <div class="signed-in-panel" id="signedInPanel" hidden>
@@ -155,9 +157,10 @@
       <div class="leaderboard-state" id="leaderboardState" role="status" aria-live="polite">登录后查看排行榜。</div>
       <ol class="leaderboard-list" id="leaderboardList"></ol>
       <button class="secondary-button" id="leaderboardLoginButton" type="button">登录后查看</button>
+      <p class="network-hint">☁ 排行榜数据存储在 Google（Firebase）数据库，查看需要可访问网络。</p>
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./js/main.js?v=20260923-2"></script>
+    <script type="module" src="./js/main.js?v=20260923-3"></script>
   </body>
 </html>

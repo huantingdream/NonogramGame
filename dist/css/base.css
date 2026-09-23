@@ -294,6 +294,8 @@ h1 em { color: var(--lime); font-style: normal; }
 }
 .form-field input:focus, .leaderboard-filters select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(23, 70, 209, 0.12); }
 .form-message { min-height: 22px; margin: 2px 0 8px !important; color: var(--danger) !important; font-size: 0.78rem !important; }
+.network-hint { margin: 10px 0 0; color: var(--muted); font-size: 0.74rem; line-height: 1.6; }
+.network-hint::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; background: var(--blue); border-radius: 50%; vertical-align: 1px; opacity: 0.55; }
 .signed-in-panel { text-align: center; }
 .account-avatar { display: grid; place-items: center; width: 70px; height: 70px; margin: 8px auto 16px; color: var(--blue); background: var(--lime); border-radius: 20px; font-size: 1.7rem; font-weight: 900; }
 .signed-in-panel h2 { margin-bottom: 4px; }
