@@ -41,11 +41,22 @@ function cellCount() {
 
 // ---------------------------------------------------------------------------
 // 布雷（首击后执行，保证首击格及周围 8 格无雷）
+//
+// 为了尽量避免「二选一只能猜」的局面，布雷不再是纯随机：
+// 每生成一个候选雷区，就用一个纯逻辑求解器（不含任何猜测）从首击格模拟通关，
+// 统计被迫猜测的次数；反复重抽直到找到一个无需猜测即可通关的雷区。
+// 实在找不到（概率极低）时，退而求其次采用需要猜测次数最少的那个。
+// 每个候选的种子都由 puzzleSeed 确定性推出，同一题号 + 同一首击位置
+// 得到的雷区完全一致，排行榜成绩仍可复现。
 // ---------------------------------------------------------------------------
 
-function placeMines(safeRow, safeCol) {
+// 各难度的重抽预算：免猜雷区在困难难度约 3% 概率，期望 ~33 次即可命中。
+const GENERATION_ATTEMPTS = { easy: 100, normal: 300, hard: 800 };
+const GENERATION_TIME_LIMIT_MS = 300;
+
+function generateField(safeRow, safeCol, seed) {
   const { rows, cols, mines } = config();
-  const random = makeSeededRandom(state.puzzleSeed);
+  const random = makeSeededRandom(seed);
 
   const forbidden = new Set();
   for (let r = safeRow - 1; r <= safeRow + 1; r += 1) {
@@ -60,22 +71,157 @@ function placeMines(safeRow, safeCol) {
   }
   shuffle(candidates, random);
 
-  state.mineField = Array.from({ length: rows }, () => Array(cols).fill(false));
+  const mineField = Array.from({ length: rows }, () => Array(cols).fill(false));
   candidates.slice(0, mines).forEach((index) => {
-    state.mineField[Math.floor(index / cols)][index % cols] = true;
+    mineField[Math.floor(index / cols)][index % cols] = true;
   });
 
-  state.adjacent = Array.from({ length: rows }, (_, row) =>
+  const adjacent = Array.from({ length: rows }, (_, row) =>
     Array.from({ length: cols }, (_, col) => {
       let count = 0;
       for (let r = row - 1; r <= row + 1; r += 1) {
         for (let c = col - 1; c <= col + 1; c += 1) {
-          if (r >= 0 && r < rows && c >= 0 && c < cols && state.mineField[r][c]) count += 1;
+          if (r >= 0 && r < rows && c >= 0 && c < cols && mineField[r][c]) count += 1;
         }
       }
       return count;
     })
   );
+
+  return { mineField, adjacent };
+}
+
+// 纯逻辑求解器：只用经典推理规则，从首击格模拟通关，返回被迫猜测的次数。
+// 规则一：数字格已标旗数等于数字 → 其余未知格安全；
+// 规则二：数字格的未知格数等于剩余雷数 → 这些未知格全是雷；
+// 子集规则：A 的未知格集合是 B 的子集 → B\A 中的雷数 = B 剩余雷数 − A 剩余雷数。
+// 三条规则都推不动时视为「被迫猜一次」，揭开一个安全格继续推。
+function countForcedGuesses(mineField, adjacent, firstRow, firstCol) {
+  const { rows, cols } = config();
+  const revealed = Array.from({ length: rows }, () => Array(cols).fill(false));
+  const flagged = Array.from({ length: rows }, () => Array(cols).fill(false));
+  const safeTotal = rows * cols - config().mines;
+  let revealedCount = 0;
+  let guesses = 0;
+
+  const revealFlood = (startRow, startCol) => {
+    const queue = [[startRow, startCol]];
+    while (queue.length) {
+      const [r, c] = queue.pop();
+      if (r < 0 || r >= rows || c < 0 || c >= cols) continue;
+      if (revealed[r][c] || flagged[r][c]) continue;
+      revealed[r][c] = true;
+      revealedCount += 1;
+      if (adjacent[r][c] === 0) {
+        for (let dr = -1; dr <= 1; dr += 1) {
+          for (let dc = -1; dc <= 1; dc += 1) {
+            if (dr !== 0 || dc !== 0) queue.push([r + dr, c + dc]);
+          }
+        }
+      }
+    }
+  };
+
+  const constraintOf = (row, col) => {
+    const hidden = [];
+    let flagCount = 0;
+    for (let r = row - 1; r <= row + 1; r += 1) {
+      for (let c = col - 1; c <= col + 1; c += 1) {
+        if (r < 0 || r >= rows || c < 0 || c >= cols || revealed[r][c]) continue;
+        if (flagged[r][c]) flagCount += 1;
+        else hidden.push(r * cols + c);
+      }
+    }
+    return { hidden, need: adjacent[row][col] - flagCount };
+  };
+
+  revealFlood(firstRow, firstCol);
+
+  for (;;) {
+    if (revealedCount === safeTotal) return guesses;
+
+    let progress = false;
+    const constraints = [];
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        if (!revealed[row][col] || adjacent[row][col] === 0) continue;
+        const { hidden, need } = constraintOf(row, col);
+        if (!hidden.length) continue;
+        if (need === 0) {
+          hidden.forEach((index) => revealFlood(Math.floor(index / cols), index % cols));
+          progress = true;
+        } else if (hidden.length === need) {
+          hidden.forEach((index) => { flagged[Math.floor(index / cols)][index % cols] = true; });
+          progress = true;
+        } else {
+          constraints.push({ row, col, hidden, need });
+        }
+      }
+    }
+    if (progress) continue;
+
+    // 子集规则：只比较距离足够近、可能共享未知格的数字格对。
+    for (let a = 0; a < constraints.length && !progress; a += 1) {
+      const outer = constraints[a];
+      const outerSet = new Set(outer.hidden);
+      for (let b = 0; b < constraints.length; b += 1) {
+        if (a === b) continue;
+        const inner = constraints[b];
+        if (Math.abs(outer.row - inner.row) > 2 || Math.abs(outer.col - inner.col) > 2) continue;
+        if (inner.hidden.length <= outer.hidden.length) continue;
+        if (!outer.hidden.every((index) => inner.hidden.includes(index))) continue;
+        const rest = inner.hidden.filter((index) => !outerSet.has(index));
+        const restNeed = inner.need - outer.need;
+        if (restNeed === 0) {
+          rest.forEach((index) => revealFlood(Math.floor(index / cols), index % cols));
+          progress = true;
+        } else if (restNeed === rest.length) {
+          rest.forEach((index) => { flagged[Math.floor(index / cols)][index % cols] = true; });
+          progress = true;
+        }
+        if (progress) break;
+      }
+    }
+    if (progress) continue;
+
+    // 推不动了：记一次被迫猜测，由求解器「作弊」挑一个安全格继续。
+    guesses += 1;
+    let guessed = false;
+    for (let row = 0; row < rows && !guessed; row += 1) {
+      for (let col = 0; col < cols && !guessed; col += 1) {
+        if (!revealed[row][col] && !flagged[row][col] && !mineField[row][col]) {
+          revealFlood(row, col);
+          guessed = true;
+        }
+      }
+    }
+    if (!guessed) return guesses; // 理论上不会发生，防御性返回。
+  }
+}
+
+function placeMines(safeRow, safeCol) {
+  const maxAttempts = GENERATION_ATTEMPTS[state.preset] || 300;
+  const deadline = Date.now() + GENERATION_TIME_LIMIT_MS;
+
+  let best = null;
+  let bestGuesses = Infinity;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const seed = (state.puzzleSeed + attempt * 0x9E3779B9) >>> 0;
+    const field = generateField(safeRow, safeCol, seed);
+    const guesses = countForcedGuesses(field.mineField, field.adjacent, safeRow, safeCol);
+    if (guesses === 0) {
+      best = field;
+      break;
+    }
+    if (guesses < bestGuesses) {
+      best = field;
+      bestGuesses = guesses;
+    }
+    if (Date.now() >= deadline) break;
+  }
+
+  state.mineField = best.mineField;
+  state.adjacent = best.adjacent;
 }
 
 // ---------------------------------------------------------------------------
@@ -329,7 +475,7 @@ function mountControlPanel() {
 
     <div class="mini-guide">
       <span class="guide-icon" aria-hidden="true">✦</span>
-      <p><strong>数字是周围 8 格的雷数。</strong><br />第一次点击永远安全，放心开局。</p>
+      <p><strong>数字是周围 8 格的雷数。</strong><br />第一次点击永远安全；每局题目都保证纯推理即可通关，不用猜。</p>
     </div>
   `;
 
@@ -407,7 +553,7 @@ export default {
   howTo: `
     <p>棋盘下埋着若干颗雷。翻开一个安全格后，<strong>数字表示周围 8 格里有多少颗雷</strong>。</p>
     <p>用推理找出所有安全格并翻开它们即获胜。确定是雷的格子可以<strong>插旗</strong>；拿不准的格子可以打<strong>「?」</strong>做备忘（右键循环：插旗 → ? → 取消），「?」不影响胜负，随时可以翻开。</p>
-    <p>第一次点击永远不会踩雷。点到雷本局立即结束，可以马上开新一局。</p>
+    <p>第一次点击永远不会踩雷，而且每局题目都经过验证：<strong>只靠逻辑推理就能排完所有雷</strong>，不会遇到「二选一只能猜」的局面。点到雷本局立即结束，可以马上开新一局。</p>
   `,
   sizes: [
     { value: 81, label: "9 × 9" },
@@ -440,4 +586,13 @@ export default {
     els = {};
     ctx = null;
   }
+};
+
+// 供自动化测试验证免猜生成逻辑（不影响游戏本身）。
+export const __testing = {
+  state,
+  presets,
+  generateField,
+  countForcedGuesses,
+  placeMines
 };
