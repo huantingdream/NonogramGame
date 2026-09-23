@@ -1,113 +1,104 @@
-// 胜利弹窗与成绩上传（所有游戏共享）。
+// Shared result dialog. Each asynchronous upload belongs to one immutable round.
+import { showToast } from './utils.js';
+import { getFirebase, getCurrentUser, onAuthChange, displayNameForUser } from './firebase.js';
+import { openAuthModal } from './account.js';
 
-import { showToast } from "./utils.js";
-import { getFirebase, getCurrentUser, onAuthChange, displayNameForUser } from "./firebase.js";
-import { openAuthModal } from "./account.js";
-
-let pendingScore = null; // { game, size, difficulty, elapsedSeconds, puzzleId, puzzleSeed }
+let pendingScore = null;
 let scoreSubmitted = false;
 let scoreSubmitting = false;
+let scoreError = '';
+let successMessage = '';
 let onNextGame = null;
 let victoryTimeout = null;
+let version = 0;
 
 function els() {
   return {
-    modal: document.querySelector("#victoryModal"),
-    summary: document.querySelector("#victorySummary"),
-    scoreMessage: document.querySelector("#victoryScoreMessage"),
-    scoreActionButton: document.querySelector("#scoreActionButton"),
-    nextPuzzleButton: document.querySelector("#nextPuzzleButton")
+    modal: document.querySelector('#victoryModal'),
+    summary: document.querySelector('#victorySummary'),
+    scoreMessage: document.querySelector('#victoryScoreMessage'),
+    scoreActionButton: document.querySelector('#scoreActionButton'),
+    nextPuzzleButton: document.querySelector('#nextPuzzleButton'),
+    reviewButton: document.querySelector('#reviewScoreButton')
   };
 }
-
 function updateScoreUi() {
   const dom = els();
+  dom.reviewButton.hidden = !pendingScore;
+  dom.scoreActionButton.disabled = scoreSubmitted || scoreSubmitting;
   if (scoreSubmitted) {
-    dom.scoreMessage.textContent = "这次成绩已经进入排行榜。";
-    dom.scoreActionButton.textContent = "已上传";
-    dom.scoreActionButton.disabled = true;
-    return;
-  }
-  dom.scoreActionButton.disabled = scoreSubmitting;
-  if (scoreSubmitting) {
-    dom.scoreMessage.textContent = "正在上传成绩…";
-    dom.scoreActionButton.textContent = "上传中";
-  } else if (getCurrentUser()) {
-    dom.scoreMessage.textContent = `以“${displayNameForUser(getCurrentUser())}”提交这次成绩。`;
-    dom.scoreActionButton.textContent = "上传成绩";
+    dom.scoreMessage.textContent = successMessage || '这次成绩已经进入排行榜。';
+    dom.scoreActionButton.textContent = '已上传';
+  } else if (scoreSubmitting) {
+    dom.scoreMessage.textContent = '正在上传成绩…';
+    dom.scoreActionButton.textContent = '上传中';
   } else {
-    dom.scoreMessage.textContent = "登录后可以把成绩放进排行榜。";
-    dom.scoreActionButton.textContent = "登录并上传成绩";
+    dom.scoreMessage.textContent = scoreError || (getCurrentUser()
+      ? `以“${displayNameForUser(getCurrentUser())}”提交这次成绩。` : '登录后可以把成绩放进排行榜。');
+    dom.scoreActionButton.textContent = getCurrentUser() ? (scoreError ? '重试上传' : '上传成绩') : '登录并上传成绩';
   }
 }
-
 async function submitScore() {
   if (!pendingScore || scoreSubmitted || scoreSubmitting) return;
+  const currentVersion = version;
+  const score = pendingScore;
+  const firebase = getFirebase();
+  scoreError = '';
+  if (!firebase) {
+    scoreError = '成绩服务暂时不可用，请检查网络后重试。本局成绩仍保留。';
+    updateScoreUi(); return;
+  }
   if (!getCurrentUser()) {
     els().modal.close();
-    openAuthModal(() => {
-      if (pendingScore && !scoreSubmitted) els().modal.showModal();
+    const opened = openAuthModal(() => {
+      if (version !== currentVersion || pendingScore !== score) return;
+      els().modal.showModal();
+      submitScore();
     });
+    if (!opened) { els().modal.showModal(); updateScoreUi(); }
     return;
   }
-  scoreSubmitting = true;
-  updateScoreUi();
+  scoreSubmitting = true; updateScoreUi();
   try {
-    const result = await getFirebase().submitScore(pendingScore);
+    const result = await firebase.submitScore(score);
+    if (version !== currentVersion) return;
     scoreSubmitted = true;
-    els().scoreMessage.textContent = result.duplicate ? "这道题的成绩已经提交过了。" : "成绩已进入排行榜。";
-    showToast(result.duplicate ? "这道题已经提交过成绩" : "成绩上传成功");
+    successMessage = result.duplicate ? '本局成绩已经上传过，无需重复提交。' : '成绩已进入排行榜。';
+    showToast(result.duplicate ? '本局成绩已上传' : '成绩上传成功');
   } catch (error) {
-    els().scoreMessage.textContent = error?.code === "permission-denied"
-      ? "暂时无法提交，请重新登录后再试。"
-      : "上传失败，请检查网络后重试。";
+    if (version !== currentVersion) return;
+    scoreError = error?.code === 'permission-denied'
+      ? '上传被拒绝，请确认登录状态或联系站点管理员检查成绩权限。'
+      : '上传失败，请检查网络后重试。本局成绩仍保留。';
   } finally {
-    scoreSubmitting = false;
-    updateScoreUi();
+    if (version === currentVersion) { scoreSubmitting = false; updateScoreUi(); }
   }
 }
-
-export function hasPendingScore() {
-  return Boolean(pendingScore) && !scoreSubmitted;
-}
-
-export function reopenVictoryIfPending() {
-  if (hasPendingScore()) els().modal.showModal();
-}
-
-// Cancel delayed presentation when restarting or switching games.
+export function hasPendingScore() { return Boolean(pendingScore) && !scoreSubmitted; }
+export function reopenVictoryIfPending() { if (hasPendingScore()) els().modal.showModal(); }
 export function closeVictory() {
-  window.clearTimeout(victoryTimeout);
-  victoryTimeout = null;
-  pendingScore = null;
+  window.clearTimeout(victoryTimeout); victoryTimeout = null;
+  version++; pendingScore = null; scoreSubmitted = scoreSubmitting = false; scoreError = successMessage = '';
   if (els().modal.open) els().modal.close();
+  els().reviewButton.hidden = true;
 }
-
-// score: { game, size, difficulty, elapsedSeconds, puzzleId, puzzleSeed }
 export function showVictory({ summary, score }) {
   const dom = els();
-  pendingScore = score;
-  scoreSubmitted = false;
-  scoreSubmitting = false;
+  version++; pendingScore = { ...score }; scoreSubmitted = scoreSubmitting = false; scoreError = successMessage = '';
+  const training = ['reaction', 'aim'].includes(score.game);
+  document.querySelector('#victoryTitle').textContent = training ? '训练完成！' : '挑战成功！';
+  dom.nextPuzzleButton.textContent = training ? '再练一组' : '再来一题';
   dom.summary.textContent = summary;
   updateScoreUi();
   window.clearTimeout(victoryTimeout);
   victoryTimeout = window.setTimeout(() => dom.modal.showModal(), 260);
 }
-
 export function initVictory({ onNext }) {
-  const dom = els();
-  onNextGame = onNext;
-  dom.scoreActionButton.addEventListener("click", submitScore);
-  dom.nextPuzzleButton.addEventListener("click", () => {
-    dom.modal.close();
-    pendingScore = null;
-    if (typeof onNextGame === "function") onNextGame();
-  });
-  dom.modal.addEventListener("click", (event) => {
-    if (event.target === dom.modal) dom.modal.close();
-  });
-  onAuthChange(() => {
-    if (dom.modal.open) updateScoreUi();
-  });
+  const dom = els(); onNextGame = onNext;
+  dom.scoreActionButton.addEventListener('click', submitScore);
+  dom.reviewButton.addEventListener('click', () => { if (pendingScore) dom.modal.showModal(); });
+  dom.nextPuzzleButton.addEventListener('click', () => { closeVictory(); onNextGame?.(); });
+  document.querySelector('[data-close-result]').addEventListener('click', () => dom.modal.close());
+  dom.modal.addEventListener('click', event => { if (event.target === dom.modal) dom.modal.close(); });
+  onAuthChange(() => { if (dom.modal.open) updateScoreUi(); });
 }

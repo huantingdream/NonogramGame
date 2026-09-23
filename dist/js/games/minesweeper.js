@@ -283,6 +283,7 @@ function gameOver(won) {
 }
 
 function newGame() {
+  ctx.closeVictory();
   const { label } = config();
   state.mineField = null;
   state.adjacent = null;

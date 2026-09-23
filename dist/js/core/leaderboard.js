@@ -1,11 +1,13 @@
+import { scoreHeading, scoreLabel, scoreDetail } from './score.js';
 // 排行榜弹窗（所有游戏共享，按 游戏 + 规格 + 难度 筛选）。
 
-import { escapeHtml, formatElapsed, showToast } from "./utils.js";
+import { escapeHtml, showToast } from "./utils.js";
 import { getFirebase, getCurrentUser, onAuthChange } from "./firebase.js";
 import { openAuthModal } from "./account.js";
 
 let games = [];
 let getActiveGame = null;
+let requestVersion = 0;
 
 function els() {
   return {
@@ -43,14 +45,10 @@ function fillFilterOptions(gameId, preferred = {}) {
 async function loadLeaderboard() {
   const dom = els();
   const firebase = getFirebase();
+  const version = ++requestVersion;
+  document.querySelector("#leaderboardTitle").textContent = scoreHeading(dom.gameSelect.value);
   dom.list.innerHTML = "";
   dom.loginButton.hidden = Boolean(getCurrentUser());
-
-  if (findGame(dom.gameSelect.value).localOnly) {
-    dom.state.textContent = "这款游戏的最佳成绩保存在当前浏览器，请在游戏面板查看。";
-    dom.loginButton.hidden = true;
-    return;
-  }
 
   if (!firebase) {
     dom.state.textContent = "排行榜服务暂时不可用，游戏仍可正常进行。";
@@ -68,6 +66,7 @@ async function loadLeaderboard() {
       size: Number(dom.sizeSelect.value),
       difficulty: dom.difficultySelect.value
     });
+    if (version !== requestVersion) return;
     if (!scores.length) {
       dom.state.textContent = "这个榜单还没有成绩，来拿第一名吧。";
       return;
@@ -77,14 +76,17 @@ async function loadLeaderboard() {
       <li>
         <span class="rank">${index + 1}</span>
         <strong>${escapeHtml(score.nickname)}</strong>
-        <small>题目 #${String(score.puzzleId).padStart(4, "0")}</small>
-        <time>${formatElapsed(score.elapsedSeconds)}</time>
+        <small>${escapeHtml(scoreDetail(score))}</small>
+        <strong class="rank-value">${escapeHtml(scoreLabel(score))}</strong>
       </li>
     `).join("");
   } catch (error) {
+    if (version !== requestVersion) return;
     dom.state.textContent = error?.code === "permission-denied"
       ? "登录状态已过期，请重新登录。"
-      : "排行榜暂时加载失败，请稍后重试。";
+      : error?.code === "failed-precondition"
+        ? "排行榜索引正在准备，请稍后再试。"
+        : "排行榜暂时加载失败，请稍后重试。";
   }
 }
 

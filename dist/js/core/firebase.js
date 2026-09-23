@@ -1,3 +1,5 @@
+import { scoreOrder, trainingMetrics } from './score.js';
+
 // Firebase 接入层：动态加载官方 SDK，失败时游戏本体不受影响（静默降级）。
 // 成绩结构：{ game, size, difficulty, elapsedSeconds, puzzleId, puzzleSeed }
 
@@ -81,6 +83,7 @@ export async function initFirebase() {
           size: score.size,
           difficulty: score.difficulty,
           elapsedSeconds: score.elapsedSeconds,
+          ...trainingMetrics(score),
           puzzleId: score.puzzleId,
           puzzleSeed: score.puzzleSeed,
           createdAt: firestoreModule.serverTimestamp()
@@ -92,14 +95,13 @@ export async function initFirebase() {
         if (!auth.currentUser) throw Object.assign(new Error("需要先登录"), { code: "auth-required" });
         // 不按 game 字段过滤查询：各游戏的 size 编码互不重叠
         // （数织 5/10/15、数独 9、扫雷 81/256/480、2048 16、
-        // 数回 105/107、数桥 207/209），且改造前的旧成绩
+        // 数回 105/107、数桥 207/209、反应测试 305、瞄准训练 330），且改造前的旧成绩
         // 没有 game 字段，客户端把它们归到数织，保证旧成绩不丢失。
         const scoresQuery = firestoreModule.query(
           firestoreModule.collection(db, "scores"),
           firestoreModule.where("size", "==", size),
           firestoreModule.where("difficulty", "==", difficulty),
-          firestoreModule.orderBy("elapsedSeconds", "asc"),
-          firestoreModule.orderBy("createdAt", "asc"),
+          ...scoreOrder(game).map(([field, direction]) => firestoreModule.orderBy(field, direction)),
           firestoreModule.limit(20)
         );
         const snapshot = await firestoreModule.getDocs(scoresQuery);
@@ -110,6 +112,9 @@ export async function initFirebase() {
               game: data.game || "nonogram", // 旧成绩没有 game 字段，属于数织
               nickname: data.nickname,
               elapsedSeconds: data.elapsedSeconds,
+              averageMs: data.averageMs,
+              hits: data.hits,
+              shots: data.shots,
               puzzleId: data.puzzleId
             };
           })

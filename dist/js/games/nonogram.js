@@ -478,6 +478,7 @@ function revealStartingHints(count) {
 }
 
 async function newGame() {
+  ctx.closeVictory();
   const requestId = ++state.generationRequestId;
   const requestedSize = state.size;
   const requestedDifficulty = state.difficulty;

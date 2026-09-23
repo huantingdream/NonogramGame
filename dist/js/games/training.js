@@ -1,3 +1,4 @@
+import { randomSeed } from '../core/utils.js';
 import { pop, enterBoard, animate, cancelMotion } from '../core/motion.js';
 
 const stats = values => Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
@@ -25,7 +26,7 @@ function press(element, action, signal) {
 }
 
 export const reaction = (() => {
-  let ctx, controller, surface, phase, samples, readyAt, timeout, frame, best;
+  let ctx, controller, surface, phase, samples, readyAt, timeout, frame, best, seed;
   const key = 'gejian:reaction:best-average-ms';
   function cancelWait() { clearTimeout(timeout); cancelAnimationFrame(frame); }
   function display(next, title, description) {
@@ -57,7 +58,10 @@ export const reaction = (() => {
         const average = stats(samples);
         if (!best || average < best) { best = average; saveBest(key, best); }
         display('complete', `${average} ms`, `5 次平均 · 最快 ${Math.min(...samples)} ms · 点击开始新一组`);
-        ctx.setStatus('correct', '测试完成');
+        ctx.reportWin({
+          summary: `5 次平均反应 ${average} ms，最快 ${Math.min(...samples)} ms。`,
+          score: { size: 305, difficulty: 'normal', averageMs: average, elapsedSeconds: Math.max(1, ctx.timer.elapsed()), puzzleId: seed % 10000, puzzleSeed: seed }
+        });
       } else {
         display('result', `${elapsed} ms`, `已完成 ${samples.length} / 5 次 · 点击继续下一轮`);
         ctx.setStatus('active', '本轮完成');
@@ -76,14 +80,15 @@ export const reaction = (() => {
     }, 1500 + Math.random() * 3000);
   }
   function newGame() {
-    cancelWait(); samples = []; ctx.timer.reset(); ctx.setTitle('5 轮反应测试'); ctx.setPuzzleNumber(1);
+    ctx.closeVictory(); seed = randomSeed();
+    cancelWait(); samples = []; ctx.timer.reset(); ctx.setTitle('5 轮反应测试'); ctx.setPuzzleNumber(seed % 10000);
     ctx.setStatus('idle', '准备开始'); display('idle', '你的反应有多快？', '点击开始，等背景由红变绿后立刻点击');
   }
   return {
-    id: 'reaction', name: '反应测试', icon: 'ϟ', subtitle: 'REACTION TIME', localOnly: true,
-    sizes: [{ value: 5, label: '5 次平均' }], difficulties: [{ value: 'normal', label: '标准' }],
+    id: 'reaction', name: '反应测试', icon: 'ϟ', subtitle: 'REACTION TIME',
+    sizes: [{ value: 305, label: '5 次平均' }], difficulties: [{ value: 'normal', label: '标准' }],
     howToTitle: '等变绿，再点击',
-    howTo: '<p>点击大区域开始一轮。红色表示等待，变成绿色并出现<strong>「现在点击」</strong>后，立刻点击或按空格 / Enter。</p><p>提前点击算抢跑，需要重试本轮；完成 5 次后显示平均与最快反应时间。打开菜单、切换标签页或窗口失焦会中断当前轮，不计入结果。</p><p>最佳平均成绩保存在当前浏览器。结果受显示器和输入设备延迟影响，适合休闲练习。</p>',
+    howTo: '<p>点击大区域开始一轮。红色表示等待，变成绿色并出现<strong>「现在点击」</strong>后，立刻点击或按空格 / Enter。</p><p>提前点击算抢跑，需要重试本轮；完成 5 次后显示平均与最快反应时间。打开菜单、切换标签页或窗口失焦会中断当前轮，不计入结果。</p><p>最佳平均成绩保存在当前浏览器，完成后也可登录上传至反应排行榜。结果受显示器和输入设备延迟影响，适合休闲练习。</p>',
     newGame,
     mount(context) {
       ctx = context; controller = new AbortController(); const { signal } = controller; best = readBest(key);
@@ -91,7 +96,7 @@ export const reaction = (() => {
       ctx.els.gameRoot.innerHTML = '<button type="button" class="reaction-surface" aria-label="反应测试区域"><span aria-hidden="true" class="reaction-symbol">ϟ</span><strong></strong><small></small></button>';
       surface = ctx.els.gameRoot.querySelector('.reaction-surface');
       ctx.els.boardToolbar.innerHTML = '<div class="reaction-history" aria-live="polite" aria-label="每轮反应成绩"></div>';
-      ctx.els.desktopTip.textContent = '点击 / 空格 / Enter · 红色等待，绿色点击 · 成绩仅保存在本机';
+      ctx.els.desktopTip.textContent = '点击 / 空格 / Enter · 红色等待，绿色点击 · 完成 5 轮后可登录上传成绩';
       press(surface, action, signal);
       ctx.els.controlPanel.querySelector('#reactionReset').addEventListener('click', newGame, { signal });
       watchInterruption(interrupt, signal); newGame(); enterBoard(surface);
@@ -102,7 +107,7 @@ export const reaction = (() => {
 
 export const aim = (() => {
   const presets = { easy: { label: '大球', size: 60 }, normal: { label: '中球', size: 44 }, hard: { label: '小球', size: 32 } };
-  let ctx, controller, arena, target, phase, difficulty = 'normal', deadline, frame, hits, shots, latencies, spawnedAt, best, position;
+  let ctx, controller, arena, target, phase, difficulty = 'normal', deadline, frame, hits, shots, latencies, spawnedAt, best, position, seed;
   const key = () => `gejian:aim:${difficulty}:best-hits`;
   function updateStats() {
     ctx.els.controlPanel.querySelector('#aimHits').textContent = hits;
@@ -131,7 +136,13 @@ export const aim = (() => {
     overlay.querySelector('h3').textContent = interrupted ? '本局已中断' : `命中 ${hits} 个目标`;
     overlay.querySelector('p').textContent = interrupted ? '窗口失焦或打开菜单，本局不记录最佳成绩。' : `准确率 ${shots ? Math.round(hits / shots * 100) : 0}% · 平均命中耗时 ${latencies.length ? stats(latencies) + ' ms' : '—'}`;
     overlay.querySelector('button').textContent = '再练一次';
-    if (!interrupted) arena.querySelector('#aimRemaining').textContent = '0.0';
+    if (!interrupted) {
+      arena.querySelector('#aimRemaining').textContent = '0.0';
+      ctx.reportWin({
+        summary: `30 秒命中 ${hits} 个目标，准确率 ${shots ? Math.round(hits / shots * 100) : 0}%。`,
+        score: { size: 330, difficulty, elapsedSeconds: 30, hits, shots, averageMs: latencies.length ? Math.max(1, stats(latencies)) : 0, puzzleId: seed % 10000, puzzleSeed: seed }
+      });
+    }
   }
   function tick() {
     if (phase !== 'playing') return;
@@ -141,6 +152,7 @@ export const aim = (() => {
   }
   function start() {
     if (phase === 'playing' || document.hidden || document.querySelector('dialog[open]')) return;
+    ctx.closeVictory(); seed = randomSeed(); ctx.setPuzzleNumber(seed % 10000);
     hits = shots = 0; latencies = []; position = null; phase = 'playing';
     arena.querySelector('.aim-overlay').hidden = true;
     ctx.timer.reset(); ctx.timer.start(); ctx.setStatus('active', '瞄准中');
@@ -163,6 +175,7 @@ export const aim = (() => {
     updateStats();
   }
   function newGame() {
+    ctx.closeVictory();
     cancelAnimationFrame(frame); phase = 'idle'; hits = shots = 0; latencies = []; position = null; best = readBest(key());
     cancelMotion(arena); arena.querySelectorAll('.aim-burst').forEach(b => b.remove()); target.hidden = true;
     ctx.timer.reset(); ctx.setTitle(`30 秒 · ${presets[difficulty].label}`); ctx.setPuzzleNumber(1); ctx.setStatus('idle', '准备开始');
@@ -174,17 +187,18 @@ export const aim = (() => {
     arena.querySelector('#aimRemaining').textContent = '30.0'; updateStats();
   }
   return {
-    id: 'aim', name: '瞄准训练', icon: '⊕', subtitle: 'AIM TRAINER', localOnly: true,
-    sizes: [{ value: 30, label: '30 秒' }], difficulties: Object.entries(presets).map(([value, p]) => ({ value, label: p.label })),
+    id: 'aim', name: '瞄准训练', icon: '⊕', subtitle: 'AIM TRAINER',
+    getScoreFilter: () => ({ size: 330, difficulty }),
+    sizes: [{ value: 330, label: '30 秒' }], difficulties: Object.entries(presets).map(([value, p]) => ({ value, label: p.label })),
     howToTitle: '把准星移到小球上',
-    howTo: '<p>点击开始后，在 30 秒内用鼠标或触屏点击圆形小球。命中后，小球立即出现在新位置；点空会降低准确率。</p><p>可选择大、中、小三种目标大小。结束后显示命中数、准确率与平均命中耗时。不同大小的最佳命中数分别保存在当前浏览器。</p><p>打开菜单、切换标签页或窗口失焦会结束本局且不记录最佳成绩。使用鼠标瞄准点击，手机直接点小球。</p>',
+    howTo: '<p>点击开始后，在 30 秒内用鼠标或触屏点击圆形小球。命中后，小球立即出现在新位置；点空会降低准确率。</p><p>可选择大、中、小三种目标大小。结束后显示命中数、准确率与平均命中耗时。不同大小的最佳命中数分别保存在当前浏览器；完成整局后可登录上传成绩。排行榜先比较命中数，再比较准确率。</p><p>打开菜单、切换标签页或窗口失焦会结束本局且不记录最佳成绩。使用鼠标瞄准点击，手机直接点小球。</p>',
     newGame,
     mount(context) {
       ctx = context; controller = new AbortController(); const { signal } = controller;
       ctx.els.controlPanel.innerHTML = `<div class="eyebrow"><span></span> AIM TRAINER</div><h1>眼到手到，<br><em>命中每一球。</em></h1><div class="field-group"><div class="field-label"><span>目标大小</span></div><div class="segmented" role="radiogroup" aria-label="目标大小">${Object.entries(presets).map(([value,p])=>`<button type="button" role="radio" aria-checked="${value===difficulty}" data-aim-size="${value}">${p.label}</button>`).join('')}</div></div><div class="training-stats"><div><span>命中数</span><strong id="aimHits">0</strong></div><div><span>准确率</span><strong id="aimAccuracy">—</strong></div><div><span>本机最佳命中</span><strong id="aimBest">—</strong></div></div><button class="primary-button" id="aimReset">↻ 重新准备</button>`;
       ctx.els.gameRoot.innerHTML = '<div class="aim-arena" aria-label="瞄准训练场"><div class="aim-hud">剩余 <strong id="aimRemaining">30.0</strong> 秒</div><div class="aim-target" hidden aria-label="目标小球"></div><div class="aim-overlay"><span class="aim-reticle" aria-hidden="true">⊕</span><h3></h3><p></p><button class="primary-button" id="aimStart"></button></div></div>';
       arena = ctx.els.gameRoot.querySelector('.aim-arena'); target = arena.querySelector('.aim-target');
-      ctx.els.boardToolbar.innerHTML = '<span class="training-note">瞄准小球 · 点击圆心附近</span><span class="training-note">30 秒挑战 · 最佳成绩保存在本机</span>';
+      ctx.els.boardToolbar.innerHTML = '<span class="training-note">瞄准小球 · 点击圆心附近</span><span class="training-note">完成整局后可登录上传成绩</span>';
       ctx.els.desktopTip.textContent = '鼠标瞄准 / 触屏点击 · 点击圆球才算命中 · 点空降低准确率';
       arena.addEventListener('pointerdown', shoot, { signal });
       arena.querySelector('#aimStart').addEventListener('click', start, { signal });

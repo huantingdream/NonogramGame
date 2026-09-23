@@ -292,6 +292,7 @@ function submitPuzzle() {
 }
 
 async function newGame() {
+  ctx.closeVictory();
   const requestId = ++state.generationRequestId;
   state.generating = true;
   ctx.timer.reset();

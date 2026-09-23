@@ -9,8 +9,8 @@
       content="格间小游戏合集：数织 Nonogram、数独、扫雷、2048、数回、数桥、反应测试、瞄准训练，可自动生成题目并支持排行榜。"
     />
     <title>格间 · 小游戏合集</title>
-    <link rel="stylesheet" href="./css/base.css?v=20260923-1" />
-    <link rel="stylesheet" href="./css/games.css?v=20260923-1" />
+    <link rel="stylesheet" href="./css/base.css?v=20260923-2" />
+    <link rel="stylesheet" href="./css/games.css?v=20260923-2" />
   </head>
   <body>
     <main class="app-shell">
@@ -65,6 +65,7 @@
 
           <div class="board-toolbar" id="boardToolbar"></div>
           <p class="desktop-tip" id="desktopTip"></p>
+          <button type="button" class="secondary-button result-button" id="reviewScoreButton" hidden>查看 / 上传本局成绩</button>
         </section>
       </section>
     </main>
@@ -95,9 +96,10 @@
     </dialog>
 
     <dialog class="modal victory-modal" id="victoryModal">
+      <button class="modal-close" type="button" data-close-result aria-label="关闭成绩">×</button>
       <div class="victory-badge" aria-hidden="true">✓</div>
       <span class="modal-kicker">PUZZLE COMPLETE</span>
-      <h2>挑战成功！</h2>
+      <h2 id="victoryTitle">挑战成功！</h2>
       <p id="victorySummary">你用 00:00 完成了这道题。</p>
       <div class="victory-score-card">
         <p id="victoryScoreMessage">登录后可以把成绩放进排行榜。</p>
@@ -144,7 +146,7 @@
     <dialog class="modal leaderboard-modal" id="leaderboardModal">
       <button class="modal-close" type="button" data-close-leaderboard aria-label="关闭">×</button>
       <span class="modal-kicker">LEADERBOARD</span>
-      <h2>最快完成榜</h2>
+      <h2 id="leaderboardTitle">最快完成榜</h2>
       <div class="leaderboard-filters">
         <label><span>游戏</span><select id="leaderboardGame"></select></label>
         <label><span>规格</span><select id="leaderboardSize"></select></label>
@@ -156,6 +158,6 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./js/main.js?v=20260923-1"></script>
+    <script type="module" src="./js/main.js?v=20260923-2"></script>
   </body>
 </html>

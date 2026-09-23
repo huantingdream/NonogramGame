@@ -10,12 +10,14 @@ service cloud.firestore {
     // Fields:
     //   - uid: string (required, immutable, authenticated owner UID)
     //   - nickname: string (required, 1-20 chars, auth display name)
-    //   - game: string (required, nonogram/sudoku/minesweeper/2048/slitherlink/hashi)
-    //   - size: int (required, board size code: 5/9/10/15/16/81/105/107/207/209/256/480)
+    //   - game: string (required, nonogram/sudoku/minesweeper/2048/slitherlink/hashi/reaction/aim)
+    //   - size: int (required, board size code: 5/9/10/15/16/81/105/107/207/209/256/305/330/480)
     //   - difficulty: string (required, easy/normal/hard)
     //   - elapsedSeconds: int (required, 1-86400)
     //   - puzzleId: int (required, 0-9999)
     //   - puzzleSeed: int (required, 0-4294967295)
+    //   - averageMs: int (required for reaction/aim; reaction average, aim mean hit time)
+    //   - hits, shots: int (required only for aim; 0 <= hits <= shots <= 10000)
     //   - createdAt: timestamp (required, server timestamp)
     //
     // ===============================================================
@@ -58,7 +60,25 @@ service cloud.firestore {
            (data.size == 107 && data.difficulty == 'normal'))) ||
         (data.game == 'hashi' &&
           ((data.size == 207 && data.difficulty == 'easy') ||
-           (data.size == 209 && data.difficulty == 'normal')));
+           (data.size == 209 && data.difficulty == 'normal'))) ||
+        (data.game == 'reaction' && data.size == 305 && data.difficulty == 'normal') ||
+        (data.game == 'aim' && data.size == 330 && data.elapsedSeconds == 30);
+    }
+
+    function trainingFields(data) {
+      return data.game == 'reaction' ? ['averageMs'] :
+        (data.game == 'aim' ? ['averageMs', 'hits', 'shots'] : []);
+    }
+
+    function isValidTrainingMetrics(data) {
+      return (data.game != 'reaction' && data.game != 'aim') ||
+        (data.game == 'reaction' && data.averageMs is int &&
+          data.averageMs >= 1 && data.averageMs <= 86400000) ||
+        (data.game == 'aim' && data.hits is int && data.shots is int &&
+          data.hits >= 0 && data.hits <= data.shots && data.shots <= 10000 &&
+          data.averageMs is int &&
+          ((data.hits == 0 && data.averageMs == 0) ||
+           (data.hits > 0 && data.averageMs >= 1 && data.averageMs <= 30000)));
     }
 
     function isValidScore(data) {
@@ -72,7 +92,7 @@ service cloud.firestore {
         'puzzleId',
         'puzzleSeed',
         'createdAt'
-      ];
+      ].concat(trainingFields(data));
       return hasRequiredFields(data, fields) &&
         hasOnlyAllowedFields(data, fields) &&
         data.uid is string &&
@@ -83,12 +103,13 @@ service cloud.firestore {
         data.nickname.size() <= 20 &&
         data.nickname == request.auth.token.name &&
         data.game is string &&
-        data.game in ['nonogram', 'sudoku', 'minesweeper', '2048', 'slitherlink', 'hashi'] &&
+        data.game in ['nonogram', 'sudoku', 'minesweeper', '2048', 'slitherlink', 'hashi', 'reaction', 'aim'] &&
         data.size is int &&
-        data.size in [5, 9, 10, 15, 16, 81, 105, 107, 207, 209, 256, 480] &&
+        data.size in [5, 9, 10, 15, 16, 81, 105, 107, 207, 209, 256, 305, 330, 480] &&
         data.difficulty is string &&
         data.difficulty in ['easy', 'normal', 'hard'] &&
         isValidGameConfig(data) &&
+        isValidTrainingMetrics(data) &&
         data.elapsedSeconds is int &&
         data.elapsedSeconds >= 1 &&
         data.elapsedSeconds <= 86400 &&
@@ -114,7 +135,7 @@ service cloud.firestore {
       allow create: if isAuthenticated() &&
         isOwner(request.resource.data.uid) &&
         uidUnchanged() &&
-        scoreId.matches(request.auth.uid + '_(nonogram|sudoku|minesweeper|2048|slitherlink|hashi)_(5|9|10|15|16|81|105|107|207|209|256|480)_(easy|normal|hard)_[0-9]+') &&
+        scoreId.matches(request.auth.uid + '_(nonogram|sudoku|minesweeper|2048|slitherlink|hashi|reaction|aim)_(5|9|10|15|16|81|105|107|207|209|256|305|330|480)_(easy|normal|hard)_[0-9]+') &&
         isValidScore(request.resource.data);
 
       // Scores are immutable. Replays use the same deterministic document ID.
