@@ -82,12 +82,13 @@ export function closeVictory() {
   if (els().modal.open) els().modal.close();
   els().reviewButton.hidden = true;
 }
-export function showVictory({ summary, score }) {
+export function showVictory({ summary, score, gameOver = false }) {
   const dom = els();
   version++; pendingScore = { ...score }; scoreSubmitted = scoreSubmitting = false; scoreError = successMessage = '';
   const training = ['reaction', 'aim'].includes(score.game);
-  document.querySelector('#victoryTitle').textContent = training ? '训练完成！' : '挑战成功！';
-  dom.nextPuzzleButton.textContent = training ? '再练一组' : '再来一题';
+  document.querySelector('#victoryTitle').textContent = gameOver ? '本局结束' : (training ? '训练完成！' : '挑战成功！');
+  document.querySelector('.victory-badge').textContent = gameOver ? '✦' : '✓';
+  dom.nextPuzzleButton.textContent = gameOver ? '再来一局' : (training ? '再练一组' : '再来一题');
   dom.summary.textContent = summary;
   updateScoreUi();
   window.clearTimeout(victoryTimeout);

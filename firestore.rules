@@ -18,6 +18,7 @@ service cloud.firestore {
     //   - puzzleSeed: int (required, 0-4294967295)
     //   - averageMs: int (required for reaction/aim; reaction average, aim mean hit time)
     //   - hits, shots: int (required only for aim; 0 <= hits <= shots <= 10000)
+    //   - points: int (required only for 2048; final score, 0-1000000000)
     //   - createdAt: timestamp (required, server timestamp)
     //
     // ===============================================================
@@ -67,18 +68,21 @@ service cloud.firestore {
 
     function trainingFields(data) {
       return data.game == 'reaction' ? ['averageMs'] :
-        (data.game == 'aim' ? ['averageMs', 'hits', 'shots'] : []);
+        (data.game == 'aim' ? ['averageMs', 'hits', 'shots'] :
+        (data.game == '2048' ? ['points'] : []));
     }
 
     function isValidTrainingMetrics(data) {
-      return (data.game != 'reaction' && data.game != 'aim') ||
+      return (data.game != 'reaction' && data.game != 'aim' && data.game != '2048') ||
         (data.game == 'reaction' && data.averageMs is int &&
           data.averageMs >= 1 && data.averageMs <= 86400000) ||
         (data.game == 'aim' && data.hits is int && data.shots is int &&
           data.hits >= 0 && data.hits <= data.shots && data.shots <= 10000 &&
           data.averageMs is int &&
           ((data.hits == 0 && data.averageMs == 0) ||
-           (data.hits > 0 && data.averageMs >= 1 && data.averageMs <= 30000)));
+           (data.hits > 0 && data.averageMs >= 1 && data.averageMs <= 30000))) ||
+        (data.game == '2048' && data.points is int &&
+          data.points >= 0 && data.points <= 1000000000);
     }
 
     function isValidScore(data) {

@@ -1,7 +1,7 @@
-import { scoreOrder, trainingMetrics } from './score.js';
+import { scoreOrder, gameMetrics } from './score.js';
 
 // Firebase 接入层：动态加载官方 SDK，失败时游戏本体不受影响（静默降级）。
-// 成绩结构：{ game, size, difficulty, elapsedSeconds, puzzleId, puzzleSeed }
+// 成绩结构：{ game, size, difficulty, elapsedSeconds, puzzleId, puzzleSeed }，训练类与 2048 另带指标字段
 
 const firebaseConfig = {
   apiKey: "AIzaSyDuSbs9Gp0SKGLMJLSYpnaRFy9bZyaTY08",
@@ -83,7 +83,7 @@ export async function initFirebase() {
           size: score.size,
           difficulty: score.difficulty,
           elapsedSeconds: score.elapsedSeconds,
-          ...trainingMetrics(score),
+          ...gameMetrics(score),
           puzzleId: score.puzzleId,
           puzzleSeed: score.puzzleSeed,
           createdAt: firestoreModule.serverTimestamp()
@@ -115,6 +115,7 @@ export async function initFirebase() {
               averageMs: data.averageMs,
               hits: data.hits,
               shots: data.shots,
+              points: data.points,
               puzzleId: data.puzzleId
             };
           })

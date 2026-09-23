@@ -37,7 +37,13 @@ write(valid,docid=doc,expected=403) # replay / update
 for game,size,diff in [('nonogram',5,'easy'),('sudoku',9,'normal'),('minesweeper',81,'easy'),('2048',16,'normal'),('slitherlink',105,'easy'),('hashi',207,'easy'),('reaction',305,'normal')]:
     data={k:v for k,v in base.items() if k not in ('hits','shots','averageMs')};data.update(game=game,size=size,difficulty=diff)
     if game=='reaction':data['averageMs']=237
+    if game=='2048':data['points']=1234
     write(data)
+tile2048={k:v for k,v in base.items() if k not in ('hits','shots','averageMs')};tile2048.update(game='2048',size=16,difficulty='normal')
+write(tile2048,expected=403) # 2048 requires points
+for patch in [{'points':-1},{'points':2.5},{'points':'100'},{'points':1000000001}]:
+    write({**tile2048,**patch},expected=403)
+write({**{k:v for k,v in base.items() if k not in ('hits','shots','averageMs')},'game':'sudoku','size':9,'points':100},expected=403) # points forbidden on other games
 write({**base,'hits':0,'shots':0,'averageMs':0})
 for patch in [{'hits':5},{'hits':-1},{'hits':1.5},{'shots':10001},{'averageMs':0},{'averageMs':30001},{'averageMs':'200'},{'elapsedSeconds':29},{'size':305},{'difficulty':'admin'},{'uid':'other'},{'nickname':'Other'},{'nickname':'x'*21},{'isAdmin':1},{'createdAt':'old-date'}]:
     write({**base,**patch},expected=403,stamp='createdAt' not in patch)

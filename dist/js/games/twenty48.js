@@ -37,10 +37,10 @@ function move(direction) {
     sliding = false;
     if (board.includes(2048)) {
       over = true; ctx.timer.stop(); queuedDirection = null;
-      ctx.reportWin({ summary: `你用 ${ctx.timerText()} 合成了 2048，获得 ${score} 分！`, score: { size: 16, difficulty: 'normal', elapsedSeconds: Math.max(1, ctx.timer.elapsed()), puzzleId: seed % 10000, puzzleSeed: seed } });
+      ctx.reportWin({ summary: `你用 ${ctx.timerText()} 合成了 2048，获得 ${score} 分！`, score: { size: 16, difficulty: 'normal', elapsedSeconds: Math.max(1, ctx.timer.elapsed()), puzzleId: seed % 10000, puzzleSeed: seed, points: score } });
     } else if (!canMove2048(board)) {
       over = true; ctx.timer.stop(); queuedDirection = null;
-      ctx.setStatus('incorrect', '无路可走'); ctx.toast(`本局得分 ${score}，再来挑战一次吧！`);
+      ctx.reportWin({ gameOver: true, summary: `棋盘已满，无路可走。本局得分 ${score} 分，用时 ${ctx.timerText()}。`, score: { size: 16, difficulty: 'normal', elapsedSeconds: Math.max(1, ctx.timer.elapsed()), puzzleId: seed % 10000, puzzleSeed: seed, points: score } });
     } else if (queuedDirection) {
       const next = queuedDirection; queuedDirection = null; move(next);
     }
@@ -68,7 +68,7 @@ function newGame() {
 }
 export default {
   id: '2048', name: '2048', icon: '▣', subtitle: '2048', howToTitle: '滑动数字，合成 2048',
-  howTo: '<p>使用方向键、WASD、屏幕方向按钮，或在棋盘上滑动。所有方块会向同一个方向移动。</p><p>相邻的相同数字合并并累加分数，每个方块一回合只合并一次。有效移动后会出现一个 2 或 4。</p><p>合成 <strong>2048</strong> 即通关，排行榜比较合成用时。棋盘填满且无法合并时结束。</p>',
+  howTo: '<p>使用方向键、WASD、屏幕方向按钮，或在棋盘上滑动。所有方块会向同一个方向移动。</p><p>相邻的相同数字合并并累加分数，每个方块一回合只合并一次。有效移动后会出现一个 2 或 4。</p><p>合成 <strong>2048</strong> 即通关。棋盘填满且无法合并时本局结束，无论胜负都可以把本局得分上传排行榜。</p>',
   sizes: [{ value: 16, label: '4 × 4' }], difficulties: [{ value: 'normal', label: '经典' }], getScoreFilter: () => ({ size: 16, difficulty: 'normal' }), newGame,
   mount(context) {
     ctx = context; controller = new AbortController(); const options = { signal: controller.signal };

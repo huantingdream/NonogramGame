@@ -74,14 +74,14 @@ function buildGameContext(game) {
     },
     toast: showToast,
     closeVictory,
-    reportWin({ summary, score }) {
-      setStatus("correct");
-      animate(document.querySelector('.board-card'), [
+    reportWin({ summary, score, gameOver = false }) {
+      setStatus(gameOver ? "incorrect" : "correct", gameOver ? "本局结束" : null);
+      if (!gameOver) animate(document.querySelector('.board-card'), [
         { boxShadow: '0 0 0 0 rgba(23,70,209,0)' },
         { boxShadow: '0 0 0 5px rgba(23,70,209,.2)', offset: .4 },
         { boxShadow: '0 0 0 0 rgba(23,70,209,0)' }
       ], { duration: 500 });
-      showVictory({ summary, score: { ...score, game: game.id } });
+      showVictory({ summary, score: { ...score, game: game.id }, gameOver });
     }
   };
 }
