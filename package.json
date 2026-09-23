@@ -2,7 +2,7 @@
   "name": "gejian-games",
   "private": true,
   "version": "1.0.0",
-  "description": "格间小游戏合集：数织、数独、扫雷、2048、数回、数桥（纯前端，GitHub Pages + Firebase）",
+  "description": "格间小游戏合集：数织、数独、扫雷、2048、数回、数桥、反应测试、瞄准训练（纯前端，GitHub Pages + Firebase）",
   "scripts": {
     "dev": "python3 -m http.server 7100 --directory dist",
     "test": "node --test tests/*.test.mjs"

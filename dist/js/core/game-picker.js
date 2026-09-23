@@ -8,6 +8,8 @@ const catalog = {
   minesweeper: { category: '经典挑战', description: '小心推理，找出每一块安全地带', keywords: 'saolei minesweeper' },
   '2048': { category: '数字益智', description: '滑动与合并，向更大的数字进发', keywords: '2048 合并' },
   slitherlink: { category: '图形逻辑', description: '顺着线索，连成一条完整的环', keywords: 'shuhui slitherlink 数环' },
+  reaction: { category: '反应训练', description: '等待变色，测测你的反应有多快', keywords: 'fanying reaction 反应速度' },
+  aim: { category: '反应训练', description: '瞄准小球，挑战速度与准确率', keywords: 'miaozhun aim fps 点小球' },
   hashi: { category: '图形逻辑', description: '搭起单桥与双桥，连接所有岛屿', keywords: 'shuqiao hashi hashiwokakero' }
 };
 

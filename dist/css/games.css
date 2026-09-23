@@ -224,3 +224,34 @@
 /* Keep action labels on one line even inside a content-sized toolbar. */
 .board-actions > button { white-space: nowrap; flex-shrink: 0; }
 .board-actions > .secondary-button { width: auto; }
+
+/* Reaction and aim training */
+.training-stats { display:grid; gap:14px; margin:24px 0; }
+.training-stats > div { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.training-stats span { font-size:.82rem; opacity:.85; }
+.training-stats strong { font-size:1.4rem; font-variant-numeric:tabular-nums; }
+.reaction-surface { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; width:min(660px,calc(100vw - 68px)); min-height:360px; padding:30px; border:0; border-radius:20px; background:#1746d1; color:white; cursor:pointer; touch-action:manipulation; user-select:none; font:inherit; }
+.reaction-symbol { font-size:64px; line-height:1; opacity:.8; }
+.reaction-surface strong { font-size:clamp(26px,4vw,44px); font-variant-numeric:tabular-nums; }
+.reaction-surface small { max-width:400px; font-size:.92rem; line-height:1.8; }
+.reaction-surface[data-phase="waiting"] { background:#ad3446; }
+.reaction-surface[data-phase="ready"] { background:#147b44; }
+.reaction-surface[data-phase="early"] { background:#875516; }
+.reaction-surface:focus-visible { outline:3px solid var(--lime); outline-offset:-7px; }
+.reaction-history { display:flex; gap:10px; flex-wrap:wrap; }
+.reaction-history > span { padding:8px 12px; border-radius:8px; background:#edf2ff; font-size:.78rem; color:var(--muted); }
+.reaction-history strong { color:var(--blue); margin-left:6px; }
+.aim-arena { position:relative; width:min(660px,calc(100vw - 68px)); height:clamp(320px,45vh,440px); border-radius:18px; overflow:hidden; background:radial-gradient(ellipse at center,#233b62,#101a31); cursor:crosshair; touch-action:none; user-select:none; }
+.aim-arena::before { content:'';position:absolute;inset:0;background-image:linear-gradient(#ffffff07 1px,transparent 1px),linear-gradient(90deg,#ffffff07 1px,transparent 1px);background-size:32px 32px;pointer-events:none; }
+.aim-target { position:absolute; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle at 32% 27%,#fff1cd 0%,#ffb891 20%,#ff744a 52%,#ca391b 100%); box-shadow:0 0 24px #ff744a45,inset -3px -4px 8px #7d240244; }
+.aim-overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; color:white; text-align:center; cursor:default; }
+.aim-reticle { font-size:60px; color:var(--lime); }
+.aim-overlay h3 { font-size:clamp(23px,3vw,32px); margin:14px 0 0; }
+.aim-overlay p { max-width:420px; font-size:.9rem; line-height:1.8; color:#b9c8e2; }
+.aim-overlay button { width:auto; min-width:190px; margin-top:12px; }
+.aim-hud { position:absolute;top:12px;left:16px;z-index:1;color:#b9c8e2;font-size:.75rem;pointer-events:none; }
+.aim-hud strong { color:var(--lime);font-size:1.35rem;font-variant-numeric:tabular-nums; }
+.training-note { font-size:.75rem;color:var(--muted); }
+.aim-burst { position:absolute;width:36px;height:36px;translate:-50% -50%;border:2px solid var(--lime);border-radius:50%;pointer-events:none; }
+.aim-burst.miss { border-color:#ff9d9d; width:20px;height:20px; }
+@media(max-width:620px) { .training-stats {grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 18px;}.training-stats > div{flex-direction:column;align-items:flex-start;gap:5px;}.training-stats span{font-size:.65rem;}.training-stats strong{font-size:1.1rem;}.reaction-surface{min-height:330px;padding:20px 16px;}.reaction-surface small{font-size:.8rem;} }

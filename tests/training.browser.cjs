@@ -1,0 +1,63 @@
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const assert = require('node:assert/strict');
+(async () => {
+ const browser = await chromium.launch({ headless: true });
+ const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+ const errors = []; page.on('pageerror', e => errors.push(e.message));
+ await page.route('https://www.gstatic.com/**', r => r.abort());
+ await page.addInitScript(() => { Math.random = () => .4; });
+ await page.clock.install();
+ await page.goto(`${process.env.GAME_BASE_URL || 'http://127.0.0.1:7100/'}#reaction`);
+ const surface = page.locator('.reaction-surface'); await surface.waitFor();
+ const phase = () => surface.getAttribute('data-phase');
+ // Use native primary mouse events, then keyboard for the remaining rounds.
+ await surface.click(); assert.equal(await phase(), 'waiting');
+ await surface.click(); assert.equal(await phase(), 'early');
+ assert.equal(await page.locator('#reactionRounds').textContent(), '0 / 5');
+ for (let i = 0; i < 5; i++) {
+   await surface.focus(); await page.keyboard.press('Space'); assert.equal(await phase(), 'waiting');
+   await page.clock.runFor(2730); assert.equal(await phase(), 'ready');
+   await page.clock.runFor(200); await page.keyboard.press('Enter');
+   assert.equal(await page.locator('#reactionRounds').textContent(), `${i + 1} / 5`);
+ }
+ assert.equal(await phase(), 'complete'); assert.match(await page.locator('#reactionBest').textContent(), /ms/);
+ const best = await page.locator('#reactionBest').textContent();
+ await page.reload(); await surface.waitFor(); assert.equal(await page.locator('#reactionBest').textContent(), best);
+ await surface.click(); await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+ assert.equal(await phase(), 'interrupted'); await page.clock.runFor(5000); assert.equal(await phase(), 'interrupted');
+ await page.locator('#gamePickerButton').click(); assert.equal(await page.locator('.game-card').count(), 8);
+ await page.locator('.game-card[data-game="aim"]').click();
+ await page.locator('#aimStart').click();
+ await page.clock.runFor(400);
+ const target = page.locator('.aim-target');
+ const box = await target.boundingBox(); await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+ assert.equal(await page.locator('#aimHits').textContent(), '1');
+ const area = await page.locator('.aim-arena').boundingBox(); await page.mouse.click(area.x + area.width / 2, area.y + 15);
+ assert.equal(await page.locator('#aimAccuracy').textContent(), '50%');
+ // Right click does not count as a shot.
+ await page.mouse.click(area.x + area.width / 2, area.y + 15, { button: 'right' }); assert.equal(await page.locator('#aimAccuracy').textContent(), '50%');
+ await page.clock.runFor(30000); assert.equal(await target.isVisible(), false);
+ assert.equal(await page.locator('#aimRemaining').textContent(), '0.0');
+ assert.equal(await page.locator('#aimBest').textContent(), '1');
+ assert.match(await page.locator('.aim-overlay p').textContent(), /50%/);
+ await page.locator('#aimStart').click();
+ const hitbox = await target.boundingBox(); await page.mouse.click(hitbox.x + hitbox.width / 2, hitbox.y + hitbox.height / 2);
+ await page.locator('#gamePickerButton').click(); await page.clock.runFor(32);
+ await page.keyboard.press('Escape'); assert.match(await page.locator('.aim-overlay h3').textContent(), /中断/);
+ await page.getByRole('radio', { name: '小球', exact: true }).click(); assert.equal(await page.locator('#aimBest').textContent(), '—');
+ await page.setViewportSize({ width: 375, height: 812 }); await page.clock.runFor(400);
+ await page.locator('#aimStart').click(); await page.clock.runFor(400);
+ const touch = await target.boundingBox();
+ await page.locator('.aim-arena').dispatchEvent('pointerdown', { isPrimary: true, button: 0, pointerType: 'touch', clientX: touch.x + touch.width / 2, clientY: touch.y + touch.height / 2 });
+ assert.equal(await page.locator('#aimHits').textContent(), '1');
+ assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+ await page.locator('#aimReset').click(); await page.clock.runFor(31000);
+ assert.equal(await page.locator('#aimRemaining').textContent(), '30.0');
+ await page.locator('#leaderboardButton').click(); await page.clock.runFor(32);
+ assert.match(await page.locator('#leaderboardState').textContent(), /当前浏览器/);
+ await page.keyboard.press('Escape');
+ await page.locator('#gamePickerButton').click(); await page.locator('.game-card[data-game="reaction"]').click();
+ assert.deepEqual(errors, []);
+ console.log('PASS: 5-round reaction average/best, false start, keyboard, interrupted wait, aim hits/misses/right-click/deadline/restart, local-only leaderboard, touch, mobile and no errors.');
+ await browser.close();
+})().catch(e => { console.error(e); process.exit(1); });

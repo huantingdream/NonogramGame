@@ -46,6 +46,12 @@ async function loadLeaderboard() {
   dom.list.innerHTML = "";
   dom.loginButton.hidden = Boolean(getCurrentUser());
 
+  if (findGame(dom.gameSelect.value).localOnly) {
+    dom.state.textContent = "这款游戏的最佳成绩保存在当前浏览器，请在游戏面板查看。";
+    dom.loginButton.hidden = true;
+    return;
+  }
+
   if (!firebase) {
     dom.state.textContent = "排行榜服务暂时不可用，游戏仍可正常进行。";
     return;

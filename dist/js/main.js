@@ -16,7 +16,9 @@ import minesweeper from "./games/minesweeper.js";
 import twenty48 from "./games/twenty48.js";
 import { slitherlink, hashi } from "./games/line-puzzles.js";
 
-const GAMES = [nonogram, sudoku, minesweeper, twenty48, slitherlink, hashi];
+import { reaction, aim } from "./games/training.js";
+
+const GAMES = [nonogram, sudoku, minesweeper, twenty48, slitherlink, hashi, reaction, aim];
 const STORAGE_KEY = "gejian:lastGame";
 
 const statusLabels = {
