@@ -84,12 +84,12 @@
 .sudoku-cell.selected { background: var(--lime); box-shadow: inset 0 0 0 2px var(--ink); }
 .sudoku-cell:focus-visible { z-index: 1; outline: 3px solid var(--lime); outline-offset: -3px; }
 
-.number-pad { display: flex; gap: 5px; padding: 4px; background: #eff1f7; border-radius: 11px; }
+.number-pad { display: flex; gap: 5px; padding: 4px; background: #eef0f7; border-radius: 12px; }
 .number-pad button {
   display: grid;
   place-items: center;
-  width: 38px;
-  min-height: 40px;
+  width: 40px;
+  min-height: 44px;
   padding: 6px 0;
   color: var(--blue);
   background: transparent;
@@ -179,13 +179,13 @@
 
   .sudoku-grid { --sudoku-cell-size: min(38px, calc((100vw - 76px) / 9)); }
   .number-pad { display: grid; grid-template-columns: repeat(5, 1fr); }
-  .number-pad button { width: auto; min-height: 38px; }
+  .number-pad button { width: auto; min-height: 46px; font-size: 1.12rem; }
 
-  .mine-size-easy { --mine-cell-size: 34px; }
-  .mine-size-normal { --mine-cell-size: 21px; }
-  .mine-size-hard { --mine-cell-size: 21px; }
+  .mine-size-easy { --mine-cell-size: 38px; }
+  .mine-size-normal { --mine-cell-size: 24px; }
+  .mine-size-hard { --mine-cell-size: 24px; }
   /* 扫雷普通/困难在手机上允许横向滚动 */
-  .board-scroll:has(.mine-grid) { display: block; overflow: auto; }
+  .board-scroll:has(.mine-grid) { display: block; overflow: auto; -webkit-overflow-scrolling: touch; }
   .board-scroll:has(.mine-grid) .mine-grid { margin: 0 auto; }
   /* 扫雷有三个模式按钮（翻开/插旗/疑问），手机上三等分 */
   .tool-switch:has([data-mode="question"]) { grid-template-columns: repeat(3, 1fr); }
@@ -195,7 +195,7 @@
 .tiles-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; width:min(440px, calc(100vw - 76px)); padding:12px; margin:auto; background:#dce3f2; border-radius:16px; touch-action:none; user-select:none; }
 .tile { display:grid; place-items:center; aspect-ratio:1; border-radius:9px; background:#edf1f8; color:var(--ink); font-size:clamp(20px,5vw,38px); font-weight:850; font-variant-numeric:tabular-nums; }
 .tile-2 { background:#fff; }.tile-4 {background:#e5edff;}.tile-8 {background:#c7d7ff;}.tile-16 {background:#96b1fa;}.tile-32 {background:#5c86eb;color:white;}.tile-64 {background:#2455cc;color:white;}.tile-128 {background:#153fab;color:white;}.tile-256 {background:#102968;color:white;}.tile-512 {background:#d3e99a;}.tile-1024 {background:#c3e660;font-size:clamp(18px,4vw,30px);}.tile-2048 {background:var(--lime);font-size:clamp(18px,4vw,30px);}
-.tile-score { color:var(--ink); display:flex; justify-content:space-between; align-items:center; padding:18px; margin:24px 0; background:#edf2ff; border-radius:12px; }.tile-score strong{font-size:28px;color:var(--blue);}.direction-pad {display:flex;gap:10px;margin:auto;}.direction-pad button {min-width:52px;min-height:44px;font-size:22px;}
+.tile-score { color:var(--ink); display:flex; justify-content:space-between; align-items:center; padding:18px; margin:24px 0; background:var(--blue-soft); border-radius:12px; }.tile-score strong{font-size:28px;color:var(--blue);}.direction-pad {display:flex;gap:10px;margin:auto;}.direction-pad button {min-width:56px;min-height:48px;font-size:22px;border-radius:12px;}
 .line-board { position:relative; width:min(510px,calc(100vw - 76px)); aspect-ratio:1; margin:auto; user-select:none; touch-action:manipulation; }
 .line-board svg {width:100%;height:100%;display:block;overflow:visible;}.loop-dot {fill:var(--ink);}.guide-line {stroke:#d9dfeb;stroke-width:.025;stroke-dasharray:.06 .08;}.drawn-line {stroke:var(--blue);stroke-width:.065;stroke-linecap:round;}
 .edge-hit {position:absolute;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;display:grid;place-items:center;cursor:pointer;color:#8a96ac;font-size:clamp(13px,3vw,20px);z-index:2;}
@@ -255,3 +255,49 @@
 .aim-burst { position:absolute;width:36px;height:36px;translate:-50% -50%;border:2px solid var(--lime);border-radius:50%;pointer-events:none; }
 .aim-burst.miss { border-color:#ff9d9d; width:20px;height:20px; }
 @media(max-width:620px) { .training-stats {grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 18px;}.training-stats > div{flex-direction:column;align-items:flex-start;gap:5px;}.training-stats span{font-size:.65rem;}.training-stats strong{font-size:1.1rem;}.reaction-surface{min-height:330px;padding:20px 16px;}.reaction-surface small{font-size:.8rem;} }
+
+/* ============================== 深色模式（跟随系统） ============================== */
+@media (prefers-color-scheme: dark) {
+  .row-clue, .col-clue { color: #c2cae4; }
+  .row-clue.solved, .col-clue.solved { color: #4fd198; background: rgba(79, 209, 152, 0.12); }
+  .cell:hover { background: #232c52; }
+
+  .sudoku-cell.given { background: #1d2544; }
+  .sudoku-cell.related { background: #1a2242; }
+  .sudoku-cell.given.related { background: #232c50; }
+  .sudoku-cell.same-value { background: #2a3560; }
+  .sudoku-cell.selected { color: #101a3d; }
+  .number-pad { background: #10152c; }
+
+  .mine-cell { background: #283055; }
+  .mine-cell:hover:not(.revealed) { background: #333d68; }
+  .mine-cell.questioned { color: #e0b84f; background: #3a331c; }
+  .mine-cell.mine { background: #4a2626; }
+  .mine-cell[data-n="1"] { color: #7d95ff; }
+  .mine-cell[data-n="2"] { color: #4fd198; }
+  .mine-cell[data-n="3"] { color: #ff8080; }
+  .mine-cell[data-n="4"] { color: #a3b4ff; }
+  .mine-cell[data-n="5"] { color: #e8935c; }
+  .mine-cell[data-n="6"] { color: #4fc3d4; }
+  .mine-cell[data-n="7"] { color: #c9cfdd; }
+  .mine-cell[data-n="8"] { color: #8b94ad; }
+  .mine-counter { background: #131a34; }
+
+  .tiles-grid { background: #161d3a; }
+  .tile { background: #242c50; }
+  .tile-2 { background: #2a3358; } .tile-4 { background: #31406f; }
+  .tile-8 { background: #3b4f9c; } .tile-16 { background: #445fc4; }
+  .tile-32 { background: #4c6fff; color: #ffffff; } .tile-64 { background: #3a55d8; color: #ffffff; }
+  .tile-128 { background: #2c3fa0; color: #ffffff; } .tile-256 { background: #24347e; color: #ffffff; }
+  .tile-512 { background: #9db84e; color: #101a3d; }
+  .tile-1024 { background: #c3e660; color: #101a3d; }
+  .tile-2048 { background: var(--lime); color: #101a3d; }
+
+  .guide-line { stroke: #39415e; }
+  .satisfied { color: #4fd198; }
+  .bridge-island.satisfied { background: rgba(79, 209, 152, 0.14); border-color: #4fd198; }
+  .bridge-island.overfull { background: #4a2626; border-color: #ff8080; }
+
+  .reaction-history > span { background: var(--blue-soft); }
+  .tool-switch button[aria-pressed="true"] { color: var(--blue); }
+}
