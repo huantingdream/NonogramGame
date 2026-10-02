@@ -1,6 +1,6 @@
 # 格间小游戏
 
-纯静态小游戏合集：数织、数独、扫雷、2048、数回（Slitherlink）、数桥（Hashiwokakero）、反应测试、瞄准训练。无需构建或服务器运行时，可部署到 GitHub Pages。
+纯静态小游戏合集：数织、数独、扫雷、2048、数回（Slitherlink）、数桥（Hashiwokakero）、合成大西瓜、反应测试、瞄准训练。无需构建或服务器运行时，可部署到 GitHub Pages。
 
 ## 本地开发与测试
 
@@ -22,6 +22,7 @@ npm test
 - **2048**：4 × 4 经典模式，方向键 / WASD / 屏幕按钮 / 滑动操作。合成 2048 后通关，排行榜比较合成用时；棋盘显示合并得分。
 - **数回**：5 × 5、7 × 7，点击画线、右键或排除模式标记，支持撤销和清空。检查数字约束、顶点度数与单一闭环。
 - **数桥**：7 × 7、9 × 9，点击岛屿间虚线循环单桥、双桥和删除。禁止交叉，检查岛屿桥数与全局连通。
+- **合成大西瓜**：Canvas 圆形刚体物理（自研，无依赖），移动瞄准后点击 / 空格丢下水果，同级相碰沿 11 级合成链升到西瓜，双西瓜相撞湮灭加分。水果堆持续越过警戒线即结束，排行榜按得分排序。
 
 - **反应测试**：随机等待变绿后点击，测量 5 次平均毫秒数，抢跑重试；支持鼠标、触屏、空格和 Enter。
 - **瞄准训练**：30 秒点球挑战，大／中／小三种目标，统计命中数、准确率和平均命中耗时。
@@ -46,6 +47,6 @@ npm test
 
 - `npm test`：检查各游戏排序、格式、毫秒精度与成绩字段校验。
 - `node tests/scores.browser.cjs`：在 Playwright 环境运行真实页面配合内存 Firebase SDK，覆盖登录后上传、重复提交、失败重试、重新打开成绩，以及旧请求不覆盖新一局。不会写入线上成绩。
-- `firebase emulators:exec --only firestore --project demo-gejian-score-tests --config firebase.test.json "python3 tests/firestore_rules.py"`：本地验证八款游戏成绩权限、必填字段、类型、范围、身份、重放和查询限额。
+- `firebase emulators:exec --only firestore --project demo-gejian-score-tests --config firebase.test.json "python3 tests/firestore_rules.py"`：本地验证九款游戏成绩权限、必填字段、类型、范围、身份、重放和查询限额。
 
-训练排行榜规格使用独立编码：反应测试 305、瞄准训练 330。新增 `averageMs`（两款训练）及 `hits` / `shots`（仅瞄准）字段按游戏校验，旧游戏数据和排名保持兼容。
+训练排行榜规格使用独立编码：反应测试 305、瞄准训练 330、合成大西瓜 450。新增 `averageMs`（两款训练）、`hits` / `shots`（仅瞄准）及 `points`（2048 / 合成大西瓜）字段按游戏校验，旧游戏数据和排名保持兼容。

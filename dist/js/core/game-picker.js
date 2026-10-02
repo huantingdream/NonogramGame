@@ -10,6 +10,7 @@ const catalog = {
   slitherlink: { category: '图形逻辑', description: '顺着线索，连成一条完整的环', keywords: 'shuhui slitherlink 数环' },
   reaction: { category: '反应训练', description: '等待变色，测测你的反应有多快', keywords: 'fanying reaction 反应速度' },
   aim: { category: '反应训练', description: '瞄准小球，挑战速度与准确率', keywords: 'miaozhun aim fps 点小球' },
+  watermelon: { category: '休闲合成', description: '丢下水果，一路合成大西瓜', keywords: 'xigua watermelon suika 合成大西瓜 水果' },
   hashi: { category: '图形逻辑', description: '搭起单桥与双桥，连接所有岛屿', keywords: 'shuqiao hashi hashiwokakero' }
 };
 

@@ -34,10 +34,10 @@ def write(data,user='tester',expected=200,docid=None,stamp=True):
 base={'uid':'tester','nickname':'Tester','game':'aim','size':330,'difficulty':'normal','elapsedSeconds':30,'puzzleId':1,'puzzleSeed':1,'hits':3,'shots':4,'averageMs':200}
 doc,valid=write(base)
 write(valid,docid=doc,expected=403) # replay / update
-for game,size,diff in [('nonogram',5,'easy'),('sudoku',9,'normal'),('minesweeper',81,'easy'),('2048',16,'normal'),('slitherlink',105,'easy'),('hashi',207,'easy'),('reaction',305,'normal')]:
+for game,size,diff in [('nonogram',5,'easy'),('sudoku',9,'normal'),('minesweeper',81,'easy'),('2048',16,'normal'),('slitherlink',105,'easy'),('hashi',207,'easy'),('reaction',305,'normal'),('watermelon',450,'normal')]:
     data={k:v for k,v in base.items() if k not in ('hits','shots','averageMs')};data.update(game=game,size=size,difficulty=diff)
     if game=='reaction':data['averageMs']=237
-    if game=='2048':data['points']=1234
+    if game in ('2048','watermelon'):data['points']=1234
     write(data)
 tile2048={k:v for k,v in base.items() if k not in ('hits','shots','averageMs')};tile2048.update(game='2048',size=16,difficulty='normal')
 write(tile2048,expected=403) # 2048 requires points
@@ -61,4 +61,4 @@ for user,limit,expected in [(None,20,403),('tester',20,200),('tester',21,403)]:
     code,text=request(':runQuery',{'structuredQuery':{'from':[{'collectionId':'scores'}],'limit':limit}},user)
     assert code==expected,(code,text);passed+=1
 code,text=request(':commit',{'writes':[{'delete':resource+'/scores/'+doc}]});assert code==403,(code,text);passed+=1
-print(f'PASS: {passed} Firestore emulator checks, including all 8 games, metrics, authentication, replay, schema, ownership and query limits.')
+print(f'PASS: {passed} Firestore emulator checks, including all 9 games, metrics, authentication, replay, schema, ownership and query limits.')

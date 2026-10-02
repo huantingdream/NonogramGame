@@ -17,8 +17,9 @@ import twenty48 from "./games/twenty48.js";
 import { slitherlink, hashi } from "./games/line-puzzles.js";
 
 import { reaction, aim } from "./games/training.js";
+import watermelon from "./games/watermelon.js";
 
-const GAMES = [nonogram, sudoku, minesweeper, twenty48, slitherlink, hashi, reaction, aim];
+const GAMES = [nonogram, sudoku, minesweeper, twenty48, slitherlink, hashi, watermelon, reaction, aim];
 const STORAGE_KEY = "gejian:lastGame";
 
 const statusLabels = {

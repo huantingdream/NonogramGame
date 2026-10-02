@@ -10,15 +10,15 @@ service cloud.firestore {
     // Fields:
     //   - uid: string (required, immutable, authenticated owner UID)
     //   - nickname: string (required, 1-20 chars, auth display name)
-    //   - game: string (required, nonogram/sudoku/minesweeper/2048/slitherlink/hashi/reaction/aim)
-    //   - size: int (required, board size code: 5/9/10/15/16/81/105/107/207/209/256/305/330/480)
+    //   - game: string (required, nonogram/sudoku/minesweeper/2048/slitherlink/hashi/watermelon/reaction/aim)
+    //   - size: int (required, board size code: 5/9/10/15/16/81/105/107/207/209/256/305/330/450/480)
     //   - difficulty: string (required, easy/normal/hard)
     //   - elapsedSeconds: int (required, 1-86400)
     //   - puzzleId: int (required, 0-9999)
     //   - puzzleSeed: int (required, 0-4294967295)
     //   - averageMs: int (required for reaction/aim; reaction average, aim mean hit time)
     //   - hits, shots: int (required only for aim; 0 <= hits <= shots <= 10000)
-    //   - points: int (required only for 2048; final score, 0-1000000000)
+    //   - points: int (required only for 2048/watermelon; final score, 0-1000000000)
     //   - createdAt: timestamp (required, server timestamp)
     //
     // ===============================================================
@@ -63,17 +63,18 @@ service cloud.firestore {
           ((data.size == 207 && data.difficulty == 'easy') ||
            (data.size == 209 && data.difficulty == 'normal'))) ||
         (data.game == 'reaction' && data.size == 305 && data.difficulty == 'normal') ||
-        (data.game == 'aim' && data.size == 330 && data.elapsedSeconds == 30);
+        (data.game == 'aim' && data.size == 330 && data.elapsedSeconds == 30) ||
+        (data.game == 'watermelon' && data.size == 450 && data.difficulty == 'normal');
     }
 
     function trainingFields(data) {
       return data.game == 'reaction' ? ['averageMs'] :
         (data.game == 'aim' ? ['averageMs', 'hits', 'shots'] :
-        (data.game == '2048' ? ['points'] : []));
+        ((data.game == '2048' || data.game == 'watermelon') ? ['points'] : []));
     }
 
     function isValidTrainingMetrics(data) {
-      return (data.game != 'reaction' && data.game != 'aim' && data.game != '2048') ||
+      return (data.game != 'reaction' && data.game != 'aim' && data.game != '2048' && data.game != 'watermelon') ||
         (data.game == 'reaction' && data.averageMs is int &&
           data.averageMs >= 1 && data.averageMs <= 86400000) ||
         (data.game == 'aim' && data.hits is int && data.shots is int &&
@@ -81,7 +82,7 @@ service cloud.firestore {
           data.averageMs is int &&
           ((data.hits == 0 && data.averageMs == 0) ||
            (data.hits > 0 && data.averageMs >= 1 && data.averageMs <= 30000))) ||
-        (data.game == '2048' && data.points is int &&
+        ((data.game == '2048' || data.game == 'watermelon') && data.points is int &&
           data.points >= 0 && data.points <= 1000000000);
     }
 
@@ -107,9 +108,9 @@ service cloud.firestore {
         data.nickname.size() <= 20 &&
         data.nickname == request.auth.token.name &&
         data.game is string &&
-        data.game in ['nonogram', 'sudoku', 'minesweeper', '2048', 'slitherlink', 'hashi', 'reaction', 'aim'] &&
+        data.game in ['nonogram', 'sudoku', 'minesweeper', '2048', 'slitherlink', 'hashi', 'reaction', 'aim', 'watermelon'] &&
         data.size is int &&
-        data.size in [5, 9, 10, 15, 16, 81, 105, 107, 207, 209, 256, 305, 330, 480] &&
+        data.size in [5, 9, 10, 15, 16, 81, 105, 107, 207, 209, 256, 305, 330, 450, 480] &&
         data.difficulty is string &&
         data.difficulty in ['easy', 'normal', 'hard'] &&
         isValidGameConfig(data) &&
@@ -139,7 +140,7 @@ service cloud.firestore {
       allow create: if isAuthenticated() &&
         isOwner(request.resource.data.uid) &&
         uidUnchanged() &&
-        scoreId.matches(request.auth.uid + '_(nonogram|sudoku|minesweeper|2048|slitherlink|hashi|reaction|aim)_(5|9|10|15|16|81|105|107|207|209|256|305|330|480)_(easy|normal|hard)_[0-9]+') &&
+        scoreId.matches(request.auth.uid + '_(nonogram|sudoku|minesweeper|2048|slitherlink|hashi|reaction|aim|watermelon)_(5|9|10|15|16|81|105|107|207|209|256|305|330|450|480)_(easy|normal|hard)_[0-9]+') &&
         isValidScore(request.resource.data);
 
       // Scores are immutable. Replays use the same deterministic document ID.
