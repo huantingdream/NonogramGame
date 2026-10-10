@@ -85,16 +85,24 @@ input, select, textarea { font-size: 16px; } /* 防止 iOS 聚焦输入框时自
 .brand strong { display: block; font-size: 1.2rem; line-height: 1; letter-spacing: 0.12em; }
 .brand small { display: block; margin-top: 4px; color: var(--muted); font-size: 0.68rem; letter-spacing: 0.2em; }
 
-/* Compact entry and searchable game library */
+/* 顶栏中央的当前游戏选择条：图标块 + 两行文字 + 右侧箭头，撑成完整的一条而不是短短一截 */
 .game-picker-button {
-  display: flex; align-items: center; gap: 10px; min-height: 46px;
-  padding: 9px 16px; border: 1px solid var(--soft-line); border-radius: 13px;
+  display: flex; align-items: center; gap: 12px;
+  flex: 0 1 460px;
+  min-height: 54px;
+  margin-inline: auto;
+  padding: 8px 18px 8px 10px;
+  border: 1px solid var(--soft-line); border-radius: 16px;
   background: var(--white); cursor: pointer; box-shadow: var(--shadow-sm);
 }
 .game-picker-button:hover, .game-picker-button[aria-expanded="true"] { border-color: var(--blue); box-shadow: 0 6px 18px rgba(37, 71, 228, 0.14); }
 .game-picker-button:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
-.game-picker-label { margin-left: 16px; color: var(--muted); font-size: .78rem; }
-.game-icon { color: var(--blue); font-size: 1rem; }
+.game-icon-tile { display: grid; place-items: center; flex-shrink: 0; width: 38px; height: 38px; background: var(--blue-soft); border-radius: 11px; }
+.game-icon { color: var(--blue); font-size: 1.25rem; line-height: 1; }
+.game-picker-text { display: grid; gap: 2px; min-width: 0; text-align: left; }
+.current-game-name { font-size: 0.95rem; letter-spacing: 0.01em; }
+.game-picker-label { color: var(--muted); font-size: 0.72rem; }
+.game-picker-chevron { margin-left: auto; color: var(--muted); font-size: 0.9rem; }
 
 .topbar-actions { display: flex; align-items: center; gap: 6px; }
 .how-to-button, .topbar-button, .text-button {
@@ -396,8 +404,7 @@ h1 em { color: var(--lime); font-style: normal; }
   }
   .topbar .brand { margin-right: auto; }
   .topbar-actions { gap: 1px; margin-left: auto; }
-  .game-picker-button { order: 3; width: 100%; min-height: 46px; }
-  .game-picker-label { margin-left: auto; }
+  .game-picker-button { order: 3; flex-basis: 100%; min-height: 52px; }
   .topbar-button, .how-to-button { min-height: 44px; padding: 8px 8px; font-size: 0.75rem; }
   .how-to-button { gap: 5px; }
   .how-to-button span { width: 20px; height: 20px; }
@@ -514,12 +521,33 @@ h1 em { color: var(--lime); font-style: normal; }
 .game-picker-modal .game-search-empty { padding: 28px 8px; text-align: center; }
 .game-card:focus-visible, .game-categories button:focus-visible, .recent-game-list button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
 @media (max-width: 620px) {
-  .game-picker-modal { width: 100%; max-width: 100%; max-height: calc(100dvh - 40px); }
-  .game-picker-modal h2 { font-size: 1.4rem; padding-right: 20px; }
-  .game-categories { gap: 5px; margin: 14px 0; }
+  /* 手机上也用居中小弹窗（覆盖通用底部抽屉样式）：更紧凑，且键盘弹出时不会被顶出屏幕 */
+  .game-picker-modal {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    margin: auto;
+    width: min(430px, calc(100% - 32px));
+    max-width: calc(100% - 32px);
+    max-height: min(620px, calc(100dvh - 56px));
+    padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 20px;
+  }
+  .game-picker-modal::before { content: none; }
+  .game-picker-modal h2 { font-size: 1.3rem; margin: 6px 0 14px; padding-right: 24px; }
+  .game-picker-modal .modal-close { top: 12px; right: 12px; }
+  .game-categories { gap: 5px; margin: 12px 0; }
   .game-categories button { min-height: 40px; padding: 8px 11px; font-size: .78rem; }
+  .recent-games { gap: 8px; }
+  .game-picker-modal .game-result-count { margin: 12px 0 8px; }
   .game-library { grid-template-columns: 1fr; }
-  .game-card { min-height: 90px; padding: 14px 14px 28px; }
+  /* 卡片收成单行简介：图标 + 名称 + 一行描述，整体像桌面端一样短短一列（min-height 不能为 0，否则网格行会被压塌） */
+  .game-card { align-items: center; min-height: 62px; padding: 10px 14px; }
+  .game-card-copy { min-width: 0; }
+  .game-card-copy strong { margin-bottom: 2px; }
+  .game-card-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .game-card-tag { position: static; flex-shrink: 0; margin-left: auto; }
   .game-card:hover { transform: none; box-shadow: none; }
 }
 
@@ -536,6 +564,7 @@ h1 em { color: var(--lime); font-style: normal; }
   .victory-modal[open] .victory-badge { animation: victory-arrive 380ms cubic-bezier(.2,.75,.25,1); }
   @media (max-width: 620px) {
     .modal[open] { animation: sheet-arrive 260ms cubic-bezier(.2,.75,.25,1); }
+    .game-picker-modal[open] { animation: dialog-arrive 220ms cubic-bezier(.2,.75,.25,1); }
   }
 }
 @keyframes dialog-arrive { from { opacity: 0; translate: 0 12px; scale: .98; } to { opacity: 1; translate: 0 0; scale: 1; } }

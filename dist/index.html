@@ -10,8 +10,8 @@
       content="格间小游戏合集：数织 Nonogram、数独、扫雷、2048、数回、数桥、合成大西瓜、反应测试、瞄准训练，可自动生成题目并支持排行榜。"
     />
     <title>格间 · 小游戏合集</title>
-    <link rel="stylesheet" href="./css/base.css?v=20261002-3" />
-    <link rel="stylesheet" href="./css/games.css?v=20261002-3" />
+    <link rel="stylesheet" href="./css/base.css?v=20261010-1" />
+    <link rel="stylesheet" href="./css/games.css?v=20261010-1" />
   </head>
   <body>
     <main class="app-shell">
@@ -24,10 +24,12 @@
         </a>
 
         <button class="game-picker-button" id="gamePickerButton" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="gamePickerModal">
-          <span class="game-icon" aria-hidden="true">▦</span>
-          <strong class="current-game-name">选择游戏</strong>
-          <span class="game-picker-label">切换游戏</span>
-          <span aria-hidden="true">⌄</span>
+          <span class="game-icon-tile" aria-hidden="true"><span class="game-icon">▦</span></span>
+          <span class="game-picker-text">
+            <strong class="current-game-name">选择游戏</strong>
+            <span class="game-picker-label">切换游戏</span>
+          </span>
+          <span class="game-picker-chevron" aria-hidden="true">⌄</span>
         </button>
 
         <div class="topbar-actions">
@@ -162,6 +164,6 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./js/main.js?v=20261002-3"></script>
+    <script type="module" src="./js/main.js?v=20261010-1"></script>
   </body>
 </html>

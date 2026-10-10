@@ -59,6 +59,21 @@ export function initGamePicker({ games, onSelect }) {
     }).join('');
   }
 
+  // 触屏设备打开时不自动聚焦搜索框，避免键盘立即弹出挤压布局；桌面端保留键盘直达搜索
+  const finePointer = window.matchMedia('(pointer: fine)').matches;
+  const viewport = window.visualViewport;
+
+  // 手机键盘弹出时可视高度变小：把弹窗压进可视区域，保证搜索框和列表不被键盘盖住
+  function fitToVisibleViewport() {
+    if (!modal.open || !viewport) return;
+    if (viewport.height < window.innerHeight - 120) {
+      modal.style.maxHeight = `${Math.max(Math.round(viewport.height) - 20, 260)}px`;
+    } else {
+      modal.style.maxHeight = '';
+    }
+  }
+  viewport?.addEventListener('resize', fitToVisibleViewport);
+
   trigger.addEventListener('click', () => {
     search.value = '';
     category = '全部';
@@ -66,10 +81,13 @@ export function initGamePicker({ games, onSelect }) {
     render();
     modal.showModal();
     trigger.setAttribute('aria-expanded', 'true');
-    search.focus();
+    if (finePointer) search.focus();
     list.scrollTop = 0;
   });
-  modal.addEventListener('close', () => trigger.setAttribute('aria-expanded', 'false'));
+  modal.addEventListener('close', () => {
+    trigger.setAttribute('aria-expanded', 'false');
+    modal.style.maxHeight = '';
+  });
   modal.querySelector('[data-close-picker]').addEventListener('click', () => modal.close());
   modal.addEventListener('click', event => {
     if (event.target === modal) {
