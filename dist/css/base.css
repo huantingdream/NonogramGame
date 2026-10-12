@@ -489,6 +489,29 @@ h1 em { color: var(--lime); font-style: normal; }
   .undo-button, .submit-button { padding-right: 10px; padding-left: 10px; }
 }
 
+/* 动态玻璃背景：着色器画布铺满视口躺在最底层，原来的静态背景交给它实时绘制 */
+.glass-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+html.glass-on,
+html.glass-on body { background: none !important; }
+
+/* 控制面板里的玻璃画布：画着同款蓝色渐变和圆环，面板内容压在它上面 */
+.glass-canvas-panel {
+  position: absolute;
+  z-index: 0;
+  border-radius: inherit;
+}
+html.glass-on .control-panel { background: none; }
+html.glass-on .control-panel::after { content: none; }
+html.glass-on .control-panel > :not(.glass-canvas-panel) { position: relative; z-index: 1; }
+html.glass-on .control-panel > .mini-guide { position: absolute; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
