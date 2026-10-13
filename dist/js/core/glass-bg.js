@@ -447,7 +447,18 @@ function makeRenderer(backend, canvas) {
     const { device, format, pipeline } = backend;
     const context = canvas.getContext('webgpu');
     if (!context) return null;
-    context.configure({ device, format, alphaMode: 'opaque' });
+    // 延迟配置：画布插入 DOM、定好尺寸后才 configure，并且每次尺寸变化都重新
+    // configure。在部分驱动（Intel Mac / Metal）上，canvas 离 DOM 时配置或尺寸
+    // 变更后的交换链会一直不呈现（画布透明），重配可以确保拿到可用的交换链。
+    let confW = 0;
+    let confH = 0;
+    const ensureConfigured = () => {
+      if (canvas.width !== confW || canvas.height !== confH) {
+        context.configure({ device, format, alphaMode: 'opaque' });
+        confW = canvas.width;
+        confH = canvas.height;
+      }
+    };
     const uniformBuffer = device.createBuffer({ size: 48, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     const bindGroup = device.createBindGroup({
       layout: pipeline.getBindGroupLayout(0),
@@ -456,6 +467,7 @@ function makeRenderer(backend, canvas) {
     return {
       resize(w, h) { canvas.width = w; canvas.height = h; },
       render(u) {
+        ensureConfigured();
         device.queue.writeBuffer(uniformBuffer, 0, u);
         const encoder = device.createCommandEncoder();
         const pass = encoder.beginRenderPass({
