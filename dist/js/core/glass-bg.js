@@ -1,6 +1,7 @@
 // 动态玻璃背景：两个着色器场景。
-// 1) 全屏画布躺在页面最底层，实时重画原来的纸面+网格背景，三颗融在一起的玻璃珠
-//    在上面缓慢漂移（色散折射 + 菲涅尔反射），并跟随指针轻微视差。
+// 1) 全屏画布躺在页面最底层，实时画网格渐变背景——四团主题色（品牌蓝 / 荧光黄 /
+//    长春花蓝 / 亮蓝）在扭曲的色场上缓慢漂移，上压 32px 网格线；三颗融在一起的
+//    玻璃珠在上面缓慢漂移（色散折射 + 菲涅尔反射），并跟随指针轻微视差。
 // 2) 左侧蓝色控制面板里也铺一块画布，画面板同款蓝色渐变和荧光黄圆环，
 //    几颗小玻璃珠在面板里慢慢游走——这是页面上始终可见的活物。
 // WebGPU 优先，WebGL2 兜底，都不支持就什么也不做（页面保持原样）。
@@ -62,15 +63,65 @@ fn env(rd : vec3f, dark : f32) -> vec3f {
   return g * mix(1.0, 0.22, dark);
 }
 
-// 整页背景：和站点 CSS 一致的纸面、荧光黄 / 蓝径向晕、32px 网格线
-fn paper(frag : vec2f, dark : f32) -> vec3f {
-  let uv = frag / u.res;
-  let a = u.res.x / u.res.y;
-  var col = mix(vec3f(0.965, 0.969, 0.984), vec3f(0.055, 0.075, 0.149), dark);
-  let q1 = (uv - vec2f(0.07, 0.09)) * vec2f(a, 1.0);
-  let q2 = (uv - vec2f(0.93, 0.84)) * vec2f(a, 1.0);
-  col += vec3f(0.886, 1.0, 0.329) * exp(-dot(q1, q1) * 9.0) * mix(0.40, 0.10, dark);
-  col += vec3f(0.145, 0.278, 0.894) * exp(-dot(q2, q2) * 7.0) * mix(0.08, 0.14, dark);
+// 网格渐变的噪声工具：值噪声 + 两层 fbm，用来扭曲色场平面
+fn hash21(p : vec2f) -> f32 {
+  var q = fract(p * vec2f(234.34, 435.345));
+  q += dot(q, q + 34.23);
+  return fract(q.x * q.y);
+}
+
+fn vnoise(p : vec2f) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let s = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash21(i), hash21(i + vec2f(1.0, 0.0)), s.x),
+    mix(hash21(i + vec2f(0.0, 1.0)), hash21(i + vec2f(1.0, 1.0)), s.x),
+    s.y);
+}
+
+fn fbm2(p : vec2f) -> f32 {
+  return 0.65 * vnoise(p) + 0.35 * vnoise(p * 2.13 + vec2f(5.2, 1.3));
+}
+
+// 整页背景：网格渐变——四团主题色（品牌蓝 / 荧光黄 / 长春花蓝 / 亮蓝）
+// 在轻微扭曲的平面上缓慢漂移，落在纸面底上，角落轻压暗，再压 32px 网格线
+fn paper(frag : vec2f, dark : f32, time : f32) -> vec3f {
+  let res = u.res;
+  let p = (frag - 0.5 * res) / res.y;
+  let t = time * 0.12;
+  let w = vec2f(fbm2(p * 1.3 + t * 0.4), fbm2(p * 1.3 - t * 0.3 + 7.0)) - 0.5;
+  let q = p + w * 0.55;
+
+  var cols = array<vec3f, 4>(
+    vec3f(0.145, 0.278, 0.894),  // 品牌蓝 #2547e4
+    vec3f(0.886, 1.0, 0.329),    // 荧光黄 #e2ff54
+    vec3f(0.557, 0.671, 1.0),    // 长春花蓝
+    vec3f(0.192, 0.435, 0.969)   // 亮蓝
+  );
+  let dim = mix(1.0, 0.6, dark);
+  var acc = vec3f(0.0);
+  var wsum = 0.0;
+  for (var i = 0; i < 4; i++) {
+    let fi = f32(i);
+    let c = vec2f(0.72 * sin(t * (0.6 + fi * 0.13) + fi * 1.7),
+                  0.48 * cos(t * (0.5 + fi * 0.11) + fi * 2.3));
+    let d = q - c;
+    let wgt = exp(-dot(d, d) * 3.0);
+    // 深色模式下荧光黄再压暗一些，只留一点青绿余晖
+    let cdim = dim * select(1.0, mix(1.0, 0.45, dark), i == 1);
+    acc += cols[i] * cdim * wgt;
+    wsum += wgt;
+  }
+  let field = acc / max(wsum, 1e-4);
+  let cover = clamp(wsum * 1.5, 0.0, 1.0);
+  let base = mix(vec3f(0.965, 0.969, 0.984), vec3f(0.055, 0.075, 0.149), dark);
+  var col = mix(base, field, cover * mix(0.30, 0.62, dark));
+  // 角落轻轻压暗，视线聚到中间
+  col *= 1.0 - 0.07 * smoothstep(0.55, 1.35, length(p));
+  // 一层胶片颗粒，防色带
+  col += (hash21(frag + vec2f(fract(time * 13.7), fract(time * 7.3)) * 91.0) - 0.5) * 0.015;
+  // 32px 网格线
   let g = fract(frag / 32.0);
   let line = max(step(g.x, 0.03125), step(g.y, 0.03125));
   let gridCol = mix(vec3f(0.09, 0.27, 0.85), vec3f(1.0, 1.0, 1.0), dark);
@@ -93,9 +144,9 @@ fn panel(frag : vec2f, dark : f32) -> vec3f {
   return col;
 }
 
-fn backdrop(frag : vec2f, dark : f32, mode : f32) -> vec3f {
+fn backdrop(frag : vec2f, dark : f32, mode : f32, time : f32) -> vec3f {
   if (mode > 0.5) { return panel(frag, dark); }
-  return paper(frag, dark);
+  return paper(frag, dark, time);
 }
 
 // 穿出玻璃的射线落到背景平面上，换算回屏幕 uv（y 向下）
@@ -159,9 +210,9 @@ fn screenUv(p : vec3f, rd : vec3f) -> vec2f {
     }
   }
   let seen = vec3f(
-    backdrop(uvs[0] * res, dark, mode).r,
-    backdrop(uvs[1] * res, dark, mode).g,
-    backdrop(uvs[2] * res, dark, mode).b);
+    backdrop(uvs[0] * res, dark, mode, time).r,
+    backdrop(uvs[1] * res, dark, mode, time).g,
+    backdrop(uvs[2] * res, dark, mode, time).b);
   var col = mix(seen, room, fres * select(0.55, 1.0, mode < 0.5));
   let edgeTint = mix(vec3f(0.36, 0.47, 1.0), vec3f(0.55, 0.7, 1.0), dark);
   col += edgeTint * edge * (select(0.30, 0.18, mode < 0.5) + burst * 0.45);
@@ -226,14 +277,56 @@ vec3 env(vec3 rd, float dark) {
   return g * mix(1.0, 0.22, dark);
 }
 
-vec3 paper(vec2 frag, float dark) {
-  vec2 uv = frag / uRes;
-  float a = uRes.x / uRes.y;
-  vec3 col = mix(vec3(0.965, 0.969, 0.984), vec3(0.055, 0.075, 0.149), dark);
-  vec2 q1 = (uv - vec2(0.07, 0.09)) * vec2(a, 1.0);
-  vec2 q2 = (uv - vec2(0.93, 0.84)) * vec2(a, 1.0);
-  col += vec3(0.886, 1.0, 0.329) * exp(-dot(q1, q1) * 9.0) * mix(0.40, 0.10, dark);
-  col += vec3(0.145, 0.278, 0.894) * exp(-dot(q2, q2) * 7.0) * mix(0.08, 0.14, dark);
+float hash21(vec2 p) {
+  vec2 q = fract(p * vec2(234.34, 435.345));
+  q += dot(q, q + 34.23);
+  return fract(q.x * q.y);
+}
+
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 s = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash21(i), hash21(i + vec2(1.0, 0.0)), s.x),
+    mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), s.x),
+    s.y);
+}
+
+float fbm2(vec2 p) {
+  return 0.65 * vnoise(p) + 0.35 * vnoise(p * 2.13 + vec2(5.2, 1.3));
+}
+
+vec3 paper(vec2 frag, float dark, float time) {
+  vec2 p = (frag - 0.5 * uRes) / uRes.y;
+  float t = time * 0.12;
+  vec2 w = vec2(fbm2(p * 1.3 + t * 0.4), fbm2(p * 1.3 - t * 0.3 + 7.0)) - 0.5;
+  vec2 q = p + w * 0.55;
+
+  vec3 cols[4];
+  cols[0] = vec3(0.145, 0.278, 0.894);
+  cols[1] = vec3(0.886, 1.0, 0.329);
+  cols[2] = vec3(0.557, 0.671, 1.0);
+  cols[3] = vec3(0.192, 0.435, 0.969);
+  float dim = mix(1.0, 0.6, dark);
+  vec3 acc = vec3(0.0);
+  float wsum = 0.0;
+  for (int i = 0; i < 4; i++) {
+    float fi = float(i);
+    vec2 c = vec2(0.72 * sin(t * (0.6 + fi * 0.13) + fi * 1.7),
+                  0.48 * cos(t * (0.5 + fi * 0.11) + fi * 2.3));
+    vec2 d = q - c;
+    float wgt = exp(-dot(d, d) * 3.0);
+    float cdim = dim * (i == 1 ? mix(1.0, 0.45, dark) : 1.0);
+    acc += cols[i] * cdim * wgt;
+    wsum += wgt;
+  }
+  vec3 field = acc / max(wsum, 1e-4);
+  float cover = clamp(wsum * 1.5, 0.0, 1.0);
+  vec3 base = mix(vec3(0.965, 0.969, 0.984), vec3(0.055, 0.075, 0.149), dark);
+  vec3 col = mix(base, field, cover * mix(0.30, 0.62, dark));
+  col *= 1.0 - 0.07 * smoothstep(0.55, 1.35, length(p));
+  col += (hash21(frag + vec2(fract(time * 13.7), fract(time * 7.3)) * 91.0) - 0.5) * 0.015;
   vec2 g = fract(frag / 32.0);
   float line = max(step(g.x, 0.03125), step(g.y, 0.03125));
   vec3 gridCol = mix(vec3(0.09, 0.27, 0.85), vec3(1.0), dark);
@@ -255,9 +348,9 @@ vec3 panel(vec2 frag, float dark) {
   return col;
 }
 
-vec3 backdrop(vec2 frag, float dark, float mode) {
+vec3 backdrop(vec2 frag, float dark, float mode, float time) {
   if (mode > 0.5) { return panel(frag, dark); }
-  return paper(frag, dark);
+  return paper(frag, dark, time);
 }
 
 vec2 screenUv(vec3 p, vec3 rd) {
@@ -318,9 +411,9 @@ void main() {
     }
   }
   vec3 seen = vec3(
-    backdrop(uvs[0] * uRes, dark, mode).r,
-    backdrop(uvs[1] * uRes, dark, mode).g,
-    backdrop(uvs[2] * uRes, dark, mode).b);
+    backdrop(uvs[0] * uRes, dark, mode, time).r,
+    backdrop(uvs[1] * uRes, dark, mode, time).g,
+    backdrop(uvs[2] * uRes, dark, mode, time).b);
   vec3 col = mix(seen, room, fres * (mode < 0.5 ? 1.0 : 0.55));
   col += mix(vec3(0.36, 0.47, 1.0), vec3(0.55, 0.7, 1.0), dark) * edge * ((mode < 0.5 ? 0.18 : 0.30) + uBurst * 0.45);
   outColor = vec4(col, 1.0);

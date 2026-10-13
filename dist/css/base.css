@@ -35,12 +35,14 @@ body {
   margin: 0;
   color: var(--ink);
   background:
-    radial-gradient(circle at 7% 9%, rgba(226, 255, 84, 0.4) 0 90px, transparent 91px),
-    radial-gradient(circle at 93% 84%, rgba(37, 71, 228, 0.06) 0 130px, transparent 131px),
+    radial-gradient(circle at 12% 16%, rgba(226, 255, 84, 0.5) 0, transparent 340px),
+    radial-gradient(circle at 88% 80%, rgba(37, 71, 228, 0.18) 0, transparent 420px),
+    radial-gradient(circle at 68% 8%, rgba(142, 171, 255, 0.4) 0, transparent 360px),
+    radial-gradient(circle at 24% 88%, rgba(49, 111, 247, 0.16) 0, transparent 380px),
     linear-gradient(rgba(23, 70, 209, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(23, 70, 209, 0.03) 1px, transparent 1px),
     var(--paper);
-  background-size: auto, auto, 32px 32px, 32px 32px, auto;
+  background-size: auto, auto, auto, auto, 32px 32px, 32px 32px, auto;
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
 }
@@ -624,12 +626,14 @@ html.glass-on .control-panel > .mini-guide { position: absolute; }
 
   body {
     background:
-      radial-gradient(circle at 7% 9%, rgba(226, 255, 84, 0.1) 0 90px, transparent 91px),
-      radial-gradient(circle at 93% 84%, rgba(93, 125, 255, 0.12) 0 130px, transparent 131px),
+      radial-gradient(circle at 12% 16%, rgba(226, 255, 84, 0.1) 0, transparent 340px),
+      radial-gradient(circle at 88% 80%, rgba(93, 125, 255, 0.2) 0, transparent 440px),
+      radial-gradient(circle at 68% 8%, rgba(37, 71, 228, 0.18) 0, transparent 380px),
+      radial-gradient(circle at 24% 88%, rgba(93, 125, 255, 0.14) 0, transparent 380px),
       linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
       var(--paper);
-    background-size: auto, auto, 32px 32px, 32px 32px, auto;
+    background-size: auto, auto, auto, auto, 32px 32px, 32px 32px, auto;
   }
 
   .topbar, .board-card { border-color: rgba(58, 66, 96, 0.7); }
