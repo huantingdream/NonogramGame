@@ -56,7 +56,10 @@ function dropConfetti() {
   for (let i = 0; i < CONFETTI; i++) {
     confetti.push({
       x: Math.random() * window.innerWidth,
-      y: -20 - Math.random() * window.innerHeight * 0.4,
+      // Half start already on screen so the celebration reads instantly.
+      y: i % 2 === 0
+        ? Math.random() * window.innerHeight * 0.5
+        : -20 - Math.random() * window.innerHeight * 0.4,
       w: 6 + Math.random() * 6,
       h: 8 + Math.random() * 8,
       vy: 1.6 + Math.random() * 2.2,
@@ -140,8 +143,10 @@ export function celebrate() {
   if (!canvas) {
     canvas = document.createElement('canvas');
     canvas.setAttribute('aria-hidden', 'true');
-    canvas.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:60;';
-    document.body.append(canvas);
+    // Lives inside the victory dialog so it paints in the dialog's top layer,
+    // above the dimmed page and the modal card (a plain z-index can never win).
+    canvas.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:10;';
+    (document.querySelector('#victoryModal') || document.body).append(canvas);
     context = canvas.getContext('2d');
   }
   sizeCanvas();

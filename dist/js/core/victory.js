@@ -106,5 +106,6 @@ export function initVictory({ onNext }) {
   dom.nextPuzzleButton.addEventListener('click', () => { closeVictory(); onNextGame?.(); });
   document.querySelector('[data-close-result]').addEventListener('click', () => dom.modal.close());
   dom.modal.addEventListener('click', event => { if (event.target === dom.modal) dom.modal.close(); });
+  dom.modal.addEventListener('close', stopFireworks);
   onAuthChange(() => { if (dom.modal.open) updateScoreUi(); });
 }
