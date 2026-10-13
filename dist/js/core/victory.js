@@ -2,6 +2,7 @@
 import { showToast } from './utils.js';
 import { getFirebase, getCurrentUser, onAuthChange, displayNameForUser } from './firebase.js';
 import { openAuthModal } from './account.js';
+import { celebrate, stopFireworks } from './fireworks.js';
 
 let pendingScore = null;
 let scoreSubmitted = false;
@@ -79,6 +80,7 @@ export function reopenVictoryIfPending() { if (hasPendingScore()) els().modal.sh
 export function closeVictory() {
   window.clearTimeout(victoryTimeout); victoryTimeout = null;
   version++; pendingScore = null; scoreSubmitted = scoreSubmitting = false; scoreError = successMessage = '';
+  stopFireworks();
   if (els().modal.open) els().modal.close();
   els().reviewButton.hidden = true;
 }
@@ -92,7 +94,10 @@ export function showVictory({ summary, score, gameOver = false }) {
   dom.summary.textContent = summary;
   updateScoreUi();
   window.clearTimeout(victoryTimeout);
-  victoryTimeout = window.setTimeout(() => dom.modal.showModal(), 260);
+  victoryTimeout = window.setTimeout(() => {
+    dom.modal.showModal();
+    if (!gameOver) celebrate();
+  }, 260);
 }
 export function initVictory({ onNext }) {
   const dom = els(); onNextGame = onNext;
