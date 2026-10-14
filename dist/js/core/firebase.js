@@ -96,7 +96,8 @@ export async function initFirebase() {
         // 不按 game 字段过滤查询：各游戏的 size 编码互不重叠
         // （数织 5/10/15、数独 9、扫雷 81/256/480、2048 16、
         // 数回 105/107、数桥 207/209、反应测试 305、瞄准训练 330、
-        // 合成大西瓜 450），且改造前的旧成绩
+        // 合成大西瓜 450、管道 505/507、点灯 607/610、
+        // 数墙 707/710、聪明格 804/806），且改造前的旧成绩
         // 没有 game 字段，客户端把它们归到数织，保证旧成绩不丢失。
         const scoresQuery = firestoreModule.query(
           firestoreModule.collection(db, "scores"),

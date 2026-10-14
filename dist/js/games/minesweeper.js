@@ -570,6 +570,17 @@ export default {
     return { size: cellCount(), difficulty: state.preset };
   },
 
+  // 每日挑战：套用固定难度档位并同步面板选中态（由调用方随后开新局）
+  configure({ difficulty } = {}) {
+    if (!ctx || !difficulty || state.preset === difficulty || !presets[difficulty]) return;
+    state.preset = difficulty;
+    const picker = ctx.els.controlPanel.querySelector("#minePresetPicker");
+    const button = picker?.querySelector(`[data-preset="${state.preset}"]`);
+    if (picker && button) selectOption(picker, button);
+    const description = ctx.els.controlPanel.querySelector("#minePresetDescription");
+    if (description) description.textContent = config().description;
+  },
+
   newGame,
 
   mount(context) {

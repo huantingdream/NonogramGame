@@ -7,7 +7,7 @@ test('rank by milliseconds for reaction, hits then fewer shots for aim, points f
   assert.deepEqual(scoreOrder('aim'), [['hits','desc'],['shots','asc'],['createdAt','asc']]);
   assert.deepEqual(scoreOrder('2048'), [['points','desc'],['elapsedSeconds','asc'],['createdAt','asc']]);
   assert.deepEqual(scoreOrder('watermelon'), [['points','desc'],['elapsedSeconds','asc'],['createdAt','asc']]);
-  for (const game of ['nonogram','sudoku','minesweeper','slitherlink','hashi']) {
+  for (const game of ['nonogram','sudoku','minesweeper','slitherlink','hashi','netwalk','akari','nurikabe','kenken']) {
     assert.deepEqual(scoreOrder(game), [['elapsedSeconds','asc'],['createdAt','asc']]);
     assert.equal(scoreLabel({game,elapsedSeconds:65}), '01:05');
     assert.deepEqual(gameMetrics({game,averageMs:123}), {});

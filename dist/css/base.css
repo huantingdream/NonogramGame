@@ -603,67 +603,123 @@ html.glass-on .control-panel > .mini-guide { position: absolute; }
   .leaderboard-list li { grid-template-columns: 28px minmax(64px, 1fr) auto; }
 }
 
-/* ============================== 深色模式（跟随系统） ============================== */
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --ink: #e7ebf7;
-    --muted: #9aa3bf;
-    --blue: #5d7dff;
-    --blue-deep: #1a31a6;
-    --blue-soft: #222b4e;
-    --paper: #0e1326;
-    --line: #3a4260;
-    --soft-line: #252c48;
-    --white: #171e38;
-    --danger: #ff8080;
-    --success: #4fd198;
-    --glass: rgba(20, 26, 48, 0.88);
-    --shadow-sm: 0 3px 12px rgba(0, 0, 0, 0.35);
-    --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
-    --shadow-lg: 0 28px 90px rgba(0, 0, 0, 0.6);
-  }
-
-  body {
-    background:
-      radial-gradient(circle at 12% 16%, rgba(226, 255, 84, 0.1) 0, transparent 340px),
-      radial-gradient(circle at 88% 80%, rgba(93, 125, 255, 0.2) 0, transparent 440px),
-      radial-gradient(circle at 68% 8%, rgba(37, 71, 228, 0.18) 0, transparent 380px),
-      radial-gradient(circle at 24% 88%, rgba(93, 125, 255, 0.14) 0, transparent 380px),
-      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      var(--paper);
-    background-size: auto, auto, auto, auto, 32px 32px, 32px 32px, auto;
-  }
-
-  .topbar, .board-card { border-color: rgba(58, 66, 96, 0.7); }
-
-  /* 品牌蓝面板在深色下用更深的渐变；面板上的文字恒为浅色 */
-  .control-panel {
-    color: #f4f6ff;
-    background: linear-gradient(165deg, #233a9e 0%, #1a2c84 46%, #101d5c 100%);
-    box-shadow: 0 22px 55px rgba(0, 0, 0, 0.5);
-  }
-  .mini-guide strong { color: #ffffff; }
-
-  /* 荧光黄上的文字恒为深色，保证对比度 */
-  .primary-button { color: #101a3d; }
-  .victory-badge, .account-avatar { color: #101a3d; }
-  .leaderboard-list li:nth-child(-n+3) .rank { color: #101a3d; }
-
-  .submit-button, .modal .primary-button { color: #ffffff; }
-  .toast { color: #ffffff; background: rgba(8, 12, 30, 0.95); }
-
-  .tool-switch, .auth-mode-switch, .leaderboard-list .rank { background: #10152c; }
-  .undo-button:hover:not(:disabled), .secondary-button:hover:not(:disabled) { background: #2b3763; }
-  .undo-button:disabled { background: #10152c; }
-  .secondary-button { border-color: #35427a; }
-  .danger-button { background: #3a1d24; border-color: #6b2f35; }
-  .victory-score-card { background: #1b2344; border-color: #2c3766; }
-  .game-card:hover { background: #1c2547; }
-  .modal::before { background: #3a4260; }
-
-  @media (max-width: 620px) {
-    .board-toolbar { background: rgba(20, 26, 48, 0.94); }
-  }
+/* ============================== 深色模式（手动切换，未设置时跟随系统） ============================== */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #e7ebf7;
+  --muted: #9aa3bf;
+  --blue: #5d7dff;
+  --blue-deep: #1a31a6;
+  --blue-soft: #222b4e;
+  --paper: #0e1326;
+  --line: #3a4260;
+  --soft-line: #252c48;
+  --white: #171e38;
+  --danger: #ff8080;
+  --success: #4fd198;
+  --glass: rgba(20, 26, 48, 0.88);
+  --shadow-sm: 0 3px 12px rgba(0, 0, 0, 0.35);
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 28px 90px rgba(0, 0, 0, 0.6);
 }
+
+[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 12% 16%, rgba(226, 255, 84, 0.1) 0, transparent 340px),
+    radial-gradient(circle at 88% 80%, rgba(93, 125, 255, 0.2) 0, transparent 440px),
+    radial-gradient(circle at 68% 8%, rgba(37, 71, 228, 0.18) 0, transparent 380px),
+    radial-gradient(circle at 24% 88%, rgba(93, 125, 255, 0.14) 0, transparent 380px),
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    var(--paper);
+  background-size: auto, auto, auto, auto, 32px 32px, 32px 32px, auto;
+}
+
+[data-theme="dark"] .topbar, [data-theme="dark"] .board-card { border-color: rgba(58, 66, 96, 0.7); }
+
+/* 品牌蓝面板在深色下用更深的渐变；面板上的文字恒为浅色 */
+[data-theme="dark"] .control-panel {
+  color: #f4f6ff;
+  background: linear-gradient(165deg, #233a9e 0%, #1a2c84 46%, #101d5c 100%);
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.5);
+}
+[data-theme="dark"] .mini-guide strong { color: #ffffff; }
+
+/* 荧光黄上的文字恒为深色，保证对比度 */
+[data-theme="dark"] .primary-button { color: #101a3d; }
+[data-theme="dark"] .victory-badge, [data-theme="dark"] .account-avatar { color: #101a3d; }
+[data-theme="dark"] .leaderboard-list li:nth-child(-n+3) .rank { color: #101a3d; }
+
+[data-theme="dark"] .submit-button, [data-theme="dark"] .modal .primary-button { color: #ffffff; }
+[data-theme="dark"] .toast { color: #ffffff; background: rgba(8, 12, 30, 0.95); }
+
+[data-theme="dark"] .tool-switch, [data-theme="dark"] .auth-mode-switch, [data-theme="dark"] .leaderboard-list .rank { background: #10152c; }
+[data-theme="dark"] .undo-button:hover:not(:disabled), [data-theme="dark"] .secondary-button:hover:not(:disabled) { background: #2b3763; }
+[data-theme="dark"] .undo-button:disabled { background: #10152c; }
+[data-theme="dark"] .secondary-button { border-color: #35427a; }
+[data-theme="dark"] .danger-button { background: #3a1d24; border-color: #6b2f35; }
+[data-theme="dark"] .victory-score-card { background: #1b2344; border-color: #2c3766; }
+[data-theme="dark"] .game-card:hover { background: #1c2547; }
+[data-theme="dark"] .modal::before { background: #3a4260; }
+
+@media (max-width: 620px) {
+  [data-theme="dark"] .board-toolbar { background: rgba(20, 26, 48, 0.94); }
+}
+
+
+/* ============================== 新组件：图标按钮 / 每日挑战 / 战绩 / 分享 ============================== */
+.topbar-button.icon-only { padding: 9px 10px; }
+.topbar-button.icon-only > span[aria-hidden="true"] { color: var(--ink); font-size: 1rem; }
+
+.guide-link-line { margin: 4px 0 14px; font-size: 0.85rem; }
+.guide-link-line a { color: var(--blue); font-weight: 650; text-decoration: none; }
+.guide-link-line a:hover { text-decoration: underline; }
+
+.share-row { display: flex; gap: 8px; margin-top: 12px; }
+.share-row .secondary-button { flex: 1; }
+
+.daily-date { margin: -6px 0 12px; color: var(--muted); font-size: 0.85rem; }
+.daily-streak-card {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;
+}
+.daily-streak-card > div {
+  padding: 12px 16px; background: var(--blue-soft); border-radius: 12px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.daily-streak-card span { color: var(--muted); font-size: 0.72rem; }
+.daily-streak-card strong { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.daily-tip { color: var(--muted); font-size: 0.8rem; line-height: 1.6; }
+.daily-list { display: grid; gap: 8px; margin-top: 14px; max-height: 46vh; overflow-y: auto; }
+.daily-item {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 10px 14px; border: 1px solid var(--soft-line); border-radius: 12px;
+  background: var(--white); cursor: pointer; text-align: left; font: inherit; color: inherit;
+}
+.daily-item:hover { border-color: var(--blue); }
+.daily-item .daily-item-icon {
+  display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0;
+  background: var(--blue-soft); border-radius: 9px; color: var(--blue); font-size: 1.05rem;
+}
+.daily-item .daily-item-copy { display: grid; gap: 1px; min-width: 0; }
+.daily-item .daily-item-copy small { color: var(--muted); font-size: 0.72rem; }
+.daily-item .daily-item-state { margin-left: auto; font-size: 0.78rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.daily-item.done .daily-item-state { color: var(--success); }
+.daily-item.done { border-color: var(--success); }
+
+.stats-overview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 8px; }
+.stats-overview > div {
+  padding: 12px 14px; background: var(--blue-soft); border-radius: 12px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.stats-overview span { color: var(--muted); font-size: 0.7rem; }
+.stats-overview strong { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.stats-section-title { margin: 16px 0 8px; font-size: 0.82rem; color: var(--muted); letter-spacing: 0.08em; }
+.stats-best-list { display: grid; gap: 6px; }
+.stats-best-list > div, .stats-recent-list > div {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border: 1px solid var(--soft-line); border-radius: 10px; font-size: 0.85rem;
+}
+.stats-best-list small, .stats-recent-list small { color: var(--muted); font-size: 0.72rem; }
+.stats-best-list strong, .stats-recent-list strong { margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stats-recent-list { display: grid; gap: 6px; max-height: 30vh; overflow-y: auto; }
+.stats-empty { color: var(--muted); font-size: 0.85rem; padding: 12px 0; }

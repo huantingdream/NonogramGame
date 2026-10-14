@@ -212,7 +212,7 @@ function drawFruit(fruit, alpha = 1) {
 }
 
 function render() {
-  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const dark = document.documentElement.dataset.theme === 'dark';
   g.clearRect(0, 0, WIDTH, HEIGHT);
 
   // 墙体与地面

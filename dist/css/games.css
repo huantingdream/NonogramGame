@@ -267,50 +267,155 @@
 .wm-next strong { font-size:30px; line-height:1; }
 @media(max-width:620px) { .training-stats {grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 18px;}.training-stats > div{flex-direction:column;align-items:flex-start;gap:5px;}.training-stats span{font-size:.65rem;}.training-stats strong{font-size:1.1rem;}.reaction-surface{min-height:330px;padding:20px 16px;}.reaction-surface small{font-size:.8rem;} }
 
-/* ============================== 深色模式（跟随系统） ============================== */
-@media (prefers-color-scheme: dark) {
-  .row-clue, .col-clue { color: #c2cae4; }
-  .row-clue.solved, .col-clue.solved { color: #4fd198; background: rgba(79, 209, 152, 0.12); }
-  .cell:hover { background: #232c52; }
+/* ============================== 深色模式（手动切换，未设置时跟随系统） ============================== */
+[data-theme="dark"] .row-clue, [data-theme="dark"] .col-clue { color: #c2cae4; }
+[data-theme="dark"] .row-clue.solved, [data-theme="dark"] .col-clue.solved { color: #4fd198; background: rgba(79, 209, 152, 0.12); }
+[data-theme="dark"] .cell:hover { background: #232c52; }
 
-  .sudoku-cell.given { background: #1d2544; }
-  .sudoku-cell.related { background: #1a2242; }
-  .sudoku-cell.given.related { background: #232c50; }
-  .sudoku-cell.same-value { background: #2a3560; }
-  .sudoku-cell.selected { color: #101a3d; }
-  .number-pad { background: #10152c; }
+[data-theme="dark"] .sudoku-cell.given { background: #1d2544; }
+[data-theme="dark"] .sudoku-cell.related { background: #1a2242; }
+[data-theme="dark"] .sudoku-cell.given.related { background: #232c50; }
+[data-theme="dark"] .sudoku-cell.same-value { background: #2a3560; }
+[data-theme="dark"] .sudoku-cell.selected { color: #101a3d; }
+[data-theme="dark"] .number-pad { background: #10152c; }
 
-  .mine-cell { background: #283055; }
-  .mine-cell:hover:not(.revealed) { background: #333d68; }
-  .mine-cell.questioned { color: #e0b84f; background: #3a331c; }
-  .mine-cell.mine { background: #4a2626; }
-  .mine-cell[data-n="1"] { color: #7d95ff; }
-  .mine-cell[data-n="2"] { color: #4fd198; }
-  .mine-cell[data-n="3"] { color: #ff8080; }
-  .mine-cell[data-n="4"] { color: #a3b4ff; }
-  .mine-cell[data-n="5"] { color: #e8935c; }
-  .mine-cell[data-n="6"] { color: #4fc3d4; }
-  .mine-cell[data-n="7"] { color: #c9cfdd; }
-  .mine-cell[data-n="8"] { color: #8b94ad; }
-  .mine-counter { background: #131a34; }
+[data-theme="dark"] .mine-cell { background: #283055; }
+[data-theme="dark"] .mine-cell:hover:not(.revealed) { background: #333d68; }
+[data-theme="dark"] .mine-cell.questioned { color: #e0b84f; background: #3a331c; }
+[data-theme="dark"] .mine-cell.mine { background: #4a2626; }
+[data-theme="dark"] .mine-cell[data-n="1"] { color: #7d95ff; }
+[data-theme="dark"] .mine-cell[data-n="2"] { color: #4fd198; }
+[data-theme="dark"] .mine-cell[data-n="3"] { color: #ff8080; }
+[data-theme="dark"] .mine-cell[data-n="4"] { color: #a3b4ff; }
+[data-theme="dark"] .mine-cell[data-n="5"] { color: #e8935c; }
+[data-theme="dark"] .mine-cell[data-n="6"] { color: #4fc3d4; }
+[data-theme="dark"] .mine-cell[data-n="7"] { color: #c9cfdd; }
+[data-theme="dark"] .mine-cell[data-n="8"] { color: #8b94ad; }
+[data-theme="dark"] .mine-counter { background: #131a34; }
 
-  .tiles-grid { background: #161d3a; }
-  .tile { background: #242c50; }
-  .tile-2 { background: #2a3358; } .tile-4 { background: #31406f; }
-  .tile-8 { background: #3b4f9c; } .tile-16 { background: #445fc4; }
-  .tile-32 { background: #4c6fff; color: #ffffff; } .tile-64 { background: #3a55d8; color: #ffffff; }
-  .tile-128 { background: #2c3fa0; color: #ffffff; } .tile-256 { background: #24347e; color: #ffffff; }
-  .tile-512 { background: #9db84e; color: #101a3d; }
-  .tile-1024 { background: #c3e660; color: #101a3d; }
-  .tile-2048 { background: var(--lime); color: #101a3d; }
+[data-theme="dark"] .tiles-grid { background: #161d3a; }
+[data-theme="dark"] .tile { background: #242c50; }
+[data-theme="dark"] .tile-2 { background: #2a3358; } [data-theme="dark"] .tile-4 { background: #31406f; }
+[data-theme="dark"] .tile-8 { background: #3b4f9c; } [data-theme="dark"] .tile-16 { background: #445fc4; }
+[data-theme="dark"] .tile-32 { background: #4c6fff; color: #ffffff; } [data-theme="dark"] .tile-64 { background: #3a55d8; color: #ffffff; }
+[data-theme="dark"] .tile-128 { background: #2c3fa0; color: #ffffff; } [data-theme="dark"] .tile-256 { background: #24347e; color: #ffffff; }
+[data-theme="dark"] .tile-512 { background: #9db84e; color: #101a3d; }
+[data-theme="dark"] .tile-1024 { background: #c3e660; color: #101a3d; }
+[data-theme="dark"] .tile-2048 { background: var(--lime); color: #101a3d; }
 
-  .guide-line { stroke: #39415e; }
-  .satisfied { color: #4fd198; }
-  .bridge-island.satisfied { background: rgba(79, 209, 152, 0.14); border-color: #4fd198; }
-  .bridge-island.overfull { background: #4a2626; border-color: #ff8080; }
+[data-theme="dark"] .guide-line { stroke: #39415e; }
+[data-theme="dark"] .satisfied { color: #4fd198; }
+[data-theme="dark"] .bridge-island.satisfied { background: rgba(79, 209, 152, 0.14); border-color: #4fd198; }
+[data-theme="dark"] .bridge-island.overfull { background: #4a2626; border-color: #ff8080; }
 
-  .reaction-history > span { background: var(--blue-soft); }
-  .tool-switch button[aria-pressed="true"] { color: var(--blue); }
+[data-theme="dark"] .reaction-history > span { background: var(--blue-soft); }
+[data-theme="dark"] .tool-switch button[aria-pressed="true"] { color: var(--blue); }
 
-  .watermelon-stage canvas { background:linear-gradient(#1d2444,#151b36); box-shadow:inset 0 0 0 2px #2a3358, 0 8px 24px rgba(0,0,0,.35); }
+[data-theme="dark"] .watermelon-stage canvas { background:linear-gradient(#1d2444,#151b36); box-shadow:inset 0 0 0 2px #2a3358, 0 8px 24px rgba(0,0,0,.35); }
+
+
+/* ============================== 管道 Netwalk ============================== */
+.netwalk-grid {
+  display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 4px;
+  width: min(480px, calc(100vw - 76px)); margin: auto; padding: 10px;
+  background: #eef0f7; border-radius: 16px; user-select: none; touch-action: manipulation;
 }
+.netwalk-cell {
+  display: grid; place-items: center; aspect-ratio: 1; padding: 0;
+  border: 0; border-radius: 8px; background: var(--white); cursor: pointer;
+  color: var(--blue); transition: background-color 160ms ease;
+}
+.netwalk-cell:hover { background: var(--blue-soft); }
+.netwalk-cell:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.netwalk-cell svg { width: 82%; height: 82%; }
+.netwalk-cell path { stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; fill: none; }
+.netwalk-cell circle { fill: currentColor; }
+
+/* ============================== 点灯 Akari ============================== */
+.akari-grid {
+  display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 3px;
+  width: min(480px, calc(100vw - 76px)); margin: auto; padding: 10px;
+  background: #eef0f7; border-radius: 16px; user-select: none; touch-action: manipulation;
+}
+.akari-cell {
+  display: grid; place-items: center; aspect-ratio: 1; padding: 0;
+  border: 0; border-radius: 7px; background: var(--white); cursor: pointer;
+  font-size: clamp(13px, 3vw, 20px); color: var(--muted);
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.akari-cell.lit { background: #fdf3c7; color: #8a6d1a; }
+.akari-cell.light { background: var(--lime); color: #101a3d; }
+.akari-cell.conflict { background: var(--danger); color: #ffffff; }
+.akari-cell.marked { color: var(--blue); font-weight: 900; }
+.akari-cell.black {
+  background: #232c52; color: #ffffff; cursor: default; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.akari-cell.black.satisfied { background: #198754; }
+button.akari-cell:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+/* ============================== 数墙 Nurikabe ============================== */
+.nurikabe-grid {
+  display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 3px;
+  width: min(480px, calc(100vw - 76px)); margin: auto; padding: 10px;
+  background: #eef0f7; border-radius: 16px; user-select: none; touch-action: manipulation;
+}
+.nurikabe-cell {
+  display: grid; place-items: center; aspect-ratio: 1; padding: 0;
+  border: 0; border-radius: 7px; background: var(--white); cursor: pointer;
+  font-size: clamp(13px, 3vw, 20px); font-weight: 800; color: var(--ink);
+  font-variant-numeric: tabular-nums; transition: background-color 160ms ease, color 160ms ease;
+}
+.nurikabe-cell:hover { background: var(--blue-soft); }
+.nurikabe-cell.sea { background: #2547e4; color: #ffffff; }
+.nurikabe-cell.island { background: var(--white); box-shadow: inset 0 0 0 2px var(--line); color: var(--muted); }
+.nurikabe-cell.clue { box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); cursor: default; }
+.nurikabe-cell:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+/* ============================== 聪明格 KenKen ============================== */
+.kenken-grid {
+  display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 0;
+  width: min(440px, calc(100vw - 76px)); margin: auto; padding: 8px;
+  background: #eef0f7; border-radius: 16px; user-select: none; touch-action: manipulation;
+}
+.kenken-cell {
+  position: relative; display: grid; place-items: center; aspect-ratio: 1; padding: 0;
+  border: 1px solid #c9cfe0; background: var(--white); cursor: pointer;
+  font-size: clamp(18px, 4.5vw, 30px); font-weight: 750; color: var(--ink);
+  font-variant-numeric: tabular-nums; transition: background-color 160ms ease;
+}
+.kenken-cell.cage-top { border-top: 2.5px solid var(--ink); }
+.kenken-cell.cage-right { border-right: 2.5px solid var(--ink); }
+.kenken-cell.cage-bottom { border-bottom: 2.5px solid var(--ink); }
+.kenken-cell.cage-left { border-left: 2.5px solid var(--ink); }
+.kenken-cell:hover { background: var(--blue-soft); }
+.kenken-cell.selected { background: #dbe6ff; box-shadow: inset 0 0 0 2px var(--blue); }
+.kenken-cell:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.cage-label {
+  position: absolute; top: 2px; left: 4px;
+  font-size: clamp(8px, 1.8vw, 12px); font-weight: 700; color: var(--muted); line-height: 1;
+}
+.kenken-pad { justify-content: center; margin: auto; }
+
+/* ============================== 新游戏深色模式 ============================== */
+[data-theme="dark"] .netwalk-grid, [data-theme="dark"] .akari-grid,
+[data-theme="dark"] .nurikabe-grid, [data-theme="dark"] .kenken-grid { background: #10152c; }
+[data-theme="dark"] .netwalk-cell { background: #242c50; }
+[data-theme="dark"] .netwalk-cell:hover { background: #2b3763; }
+[data-theme="dark"] .akari-cell { background: #242c50; }
+[data-theme="dark"] .akari-cell.lit { background: #4d4318; color: #f0d878; }
+[data-theme="dark"] .akari-cell.light { background: var(--lime); color: #101a3d; }
+[data-theme="dark"] .akari-cell.black { background: #0a0e20; color: #e7ebf7; }
+[data-theme="dark"] .akari-cell.black.satisfied { background: #146c43; }
+[data-theme="dark"] .nurikabe-cell { background: #242c50; }
+[data-theme="dark"] .nurikabe-cell:hover { background: #2b3763; }
+[data-theme="dark"] .nurikabe-cell.sea { background: #3b5bff; }
+[data-theme="dark"] .nurikabe-cell.island { background: #1a2242; box-shadow: inset 0 0 0 2px #3a4260; }
+[data-theme="dark"] .nurikabe-cell.clue { box-shadow: inset 0 0 0 2px #e7ebf7; color: #e7ebf7; }
+[data-theme="dark"] .kenken-cell { background: #242c50; border-color: #3a4260; }
+[data-theme="dark"] .kenken-cell.cage-top { border-top-color: #e7ebf7; }
+[data-theme="dark"] .kenken-cell.cage-right { border-right-color: #e7ebf7; }
+[data-theme="dark"] .kenken-cell.cage-bottom { border-bottom-color: #e7ebf7; }
+[data-theme="dark"] .kenken-cell.cage-left { border-left-color: #e7ebf7; }
+[data-theme="dark"] .kenken-cell:hover { background: #2b3763; }
+[data-theme="dark"] .kenken-cell.selected { background: #31406f; }

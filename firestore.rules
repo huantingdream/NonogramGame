@@ -10,8 +10,8 @@ service cloud.firestore {
     // Fields:
     //   - uid: string (required, immutable, authenticated owner UID)
     //   - nickname: string (required, 1-20 chars, auth display name)
-    //   - game: string (required, nonogram/sudoku/minesweeper/2048/slitherlink/hashi/watermelon/reaction/aim)
-    //   - size: int (required, board size code: 5/9/10/15/16/81/105/107/207/209/256/305/330/450/480)
+    //   - game: string (required, nonogram/sudoku/minesweeper/2048/slitherlink/hashi/watermelon/reaction/aim/netwalk/akari/nurikabe/kenken)
+    //   - size: int (required, board size code: 5/9/10/15/16/81/105/107/207/209/256/305/330/450/480/505/507/607/610/707/710/804/806)
     //   - difficulty: string (required, easy/normal/hard)
     //   - elapsedSeconds: int (required, 1-86400)
     //   - puzzleId: int (required, 0-9999)
@@ -64,7 +64,19 @@ service cloud.firestore {
            (data.size == 209 && data.difficulty == 'normal'))) ||
         (data.game == 'reaction' && data.size == 305 && data.difficulty == 'normal') ||
         (data.game == 'aim' && data.size == 330 && data.elapsedSeconds == 30) ||
-        (data.game == 'watermelon' && data.size == 450 && data.difficulty == 'normal');
+        (data.game == 'watermelon' && data.size == 450 && data.difficulty == 'normal') ||
+        (data.game == 'netwalk' &&
+          ((data.size == 505 && data.difficulty == 'easy') ||
+           (data.size == 507 && data.difficulty == 'normal'))) ||
+        (data.game == 'akari' &&
+          ((data.size == 607 && data.difficulty == 'easy') ||
+           (data.size == 610 && data.difficulty == 'normal'))) ||
+        (data.game == 'nurikabe' &&
+          ((data.size == 707 && data.difficulty == 'easy') ||
+           (data.size == 710 && data.difficulty == 'normal'))) ||
+        (data.game == 'kenken' &&
+          ((data.size == 804 && data.difficulty == 'easy') ||
+           (data.size == 806 && data.difficulty == 'normal')));
     }
 
     function trainingFields(data) {
@@ -108,9 +120,9 @@ service cloud.firestore {
         data.nickname.size() <= 20 &&
         data.nickname == request.auth.token.name &&
         data.game is string &&
-        data.game in ['nonogram', 'sudoku', 'minesweeper', '2048', 'slitherlink', 'hashi', 'reaction', 'aim', 'watermelon'] &&
+        data.game in ['nonogram', 'sudoku', 'minesweeper', '2048', 'slitherlink', 'hashi', 'reaction', 'aim', 'watermelon', 'netwalk', 'akari', 'nurikabe', 'kenken'] &&
         data.size is int &&
-        data.size in [5, 9, 10, 15, 16, 81, 105, 107, 207, 209, 256, 305, 330, 450, 480] &&
+        data.size in [5, 9, 10, 15, 16, 81, 105, 107, 207, 209, 256, 305, 330, 450, 480, 505, 507, 607, 610, 707, 710, 804, 806] &&
         data.difficulty is string &&
         data.difficulty in ['easy', 'normal', 'hard'] &&
         isValidGameConfig(data) &&
@@ -140,7 +152,7 @@ service cloud.firestore {
       allow create: if isAuthenticated() &&
         isOwner(request.resource.data.uid) &&
         uidUnchanged() &&
-        scoreId.matches(request.auth.uid + '_(nonogram|sudoku|minesweeper|2048|slitherlink|hashi|reaction|aim|watermelon)_(5|9|10|15|16|81|105|107|207|209|256|305|330|450|480)_(easy|normal|hard)_[0-9]+') &&
+        scoreId.matches(request.auth.uid + '_(nonogram|sudoku|minesweeper|2048|slitherlink|hashi|reaction|aim|watermelon|netwalk|akari|nurikabe|kenken)_(5|9|10|15|16|81|105|107|207|209|256|305|330|450|480|505|507|607|610|707|710|804|806)_(easy|normal|hard)_[0-9]+') &&
         isValidScore(request.resource.data);
 
       // Scores are immutable. Replays use the same deterministic document ID.

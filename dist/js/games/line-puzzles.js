@@ -98,7 +98,16 @@ function createLineGame(kind) {
     howToTitle:loop?'沿着数字，围成一个环':'连接岛屿，让数字恰好满足',
     howTo:loop?'<p>点击相邻圆点之间的边来画线，再点取消；切换「排除」或使用右键标记 ×。</p><p>每个数字表示其四条边中有几条属于环线。所有线段必须组成<strong>一个连续闭环</strong>，不能分叉、相交，也不能有多个小环。</p><p>绿色数字表示周围线数已满足。完成后点击「检查答案」。题目自动生成，任何满足规则的解都会被接受。</p>':'<p>点击同一行或同一列的两个相邻岛屿之间的虚线，依次切换<strong>单桥 → 双桥 → 无桥</strong>。</p><p>岛上的数字是与它相连的桥数，双桥计为 2。桥不能交叉或穿过其他岛，所有岛必须连成一个整体。</p><p>绿色岛屿表示桥数已满足。完成后点击「检查答案」。题目自动生成，任何满足规则的解都会被接受。</p>',
     sizes:presets.map(v=>({value:sizeCode(v),label:`${v} × ${v}`})), difficulties:[{value:'easy',label:'入门'},{value:'normal',label:'进阶'}],
-    getScoreFilter:()=>({size:sizeCode(n),difficulty:n===presets[0]?'easy':'normal'}), newGame,
+    getScoreFilter:()=>({size:sizeCode(n),difficulty:n===presets[0]?'easy':'normal'}),
+    // 每日挑战：套用固定棋盘规格并同步面板选中态（由调用方随后开新局）
+    configure({ size } = {}) {
+      if (!ctx || !size) return;
+      const next = Number(size) - (loop ? 100 : 200);
+      if (!presets.includes(next) || next === n) return;
+      n = next;
+      ctx.els.controlPanel.querySelectorAll('[data-size]').forEach(b => b.setAttribute('aria-checked', String(Number(b.dataset.size) === n)));
+    },
+    newGame,
     mount(context) {
       ctx = context; controller = new AbortController(); const options = {signal:controller.signal}; markMode = false;
       ctx.els.controlPanel.innerHTML = `<div class="eyebrow"><span></span> LOGIC PUZZLE</div><h1>${loop?'循着线索，<br><em>画出一个环。':'一桥一线，<br><em>连接每座岛。'}</em></h1><div class="field-group"><div class="field-label"><span>棋盘规格</span></div><div class="segmented" role="radiogroup" aria-label="棋盘规格">${presets.map(v=>`<button type="button" role="radio" aria-checked="${n===v}" data-size="${v}">${v} × ${v}</button>`).join('')}</div></div><button type="button" class="primary-button" data-action="new">↻ 生成新题目</button><div class="mini-guide"><span class="guide-icon">✦</span><p><strong>${loop?'数字决定四周的线条。':'数字决定岛屿的桥数。'}</strong><br>${loop?'不分叉、不交叉，只画一个闭环。':'每对岛屿最多两座桥，所有岛相连。'}</p></div>`;

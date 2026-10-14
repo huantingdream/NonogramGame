@@ -604,7 +604,7 @@ async function initGlassBackground() {
   }
 
   function draw(time) {
-    const dark = darkQuery.matches ? 1 : 0;
+    const dark = document.documentElement.dataset.theme === 'dark' ? 1 : 0;
     for (const scene of scenes) {
       uniforms[0] = scene.canvas.width;
       uniforms[1] = scene.canvas.height;
@@ -665,6 +665,9 @@ async function initGlassBackground() {
     }).observe(controlPanel);
   }
   darkQuery.addEventListener('change', () => { if (motionQuery.matches) staticFrame(); });
+  // 手动切换主题（data-theme）时也要刷新静态帧
+  new MutationObserver(() => { if (motionQuery.matches) staticFrame(); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   motionQuery.addEventListener('change', () => { motionQuery.matches ? staticFrame() : play(); });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {

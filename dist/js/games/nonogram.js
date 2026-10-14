@@ -829,6 +829,27 @@ export default {
     return { size: state.size, difficulty: state.difficulty };
   },
 
+  // 每日挑战：套用固定规格并同步面板选中态（由调用方随后开新局）
+  configure({ size, difficulty } = {}) {
+    if (!ctx) return;
+    if (size && state.size !== Number(size)) {
+      state.size = Number(size);
+      const picker = ctx.els.controlPanel.querySelector("#nonogramSizePicker");
+      const button = picker?.querySelector(`[data-size="${state.size}"]`);
+      if (picker && button) selectOption(picker, button);
+      const description = ctx.els.controlPanel.querySelector("#nonogramSizeDescription");
+      if (description) description.textContent = sizeDescriptions[state.size];
+    }
+    if (difficulty && state.difficulty !== difficulty) {
+      state.difficulty = difficulty;
+      const picker = ctx.els.controlPanel.querySelector("#nonogramDifficultyPicker");
+      const button = picker?.querySelector(`[data-difficulty="${state.difficulty}"]`);
+      if (picker && button) selectOption(picker, button);
+      const description = ctx.els.controlPanel.querySelector("#nonogramDifficultyDescription");
+      if (description) description.textContent = difficultyConfig[state.difficulty].description;
+    }
+  },
+
   newGame,
 
   mount(context) {

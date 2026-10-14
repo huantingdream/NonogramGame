@@ -454,6 +454,17 @@ export default {
     return { size: GRID_SIZE, difficulty: state.difficulty };
   },
 
+  // 每日挑战：套用固定难度并同步面板选中态（由调用方随后开新局）
+  configure({ difficulty } = {}) {
+    if (!ctx || !difficulty || state.difficulty === difficulty) return;
+    state.difficulty = difficulty;
+    const picker = ctx.els.controlPanel.querySelector("#sudokuDifficultyPicker");
+    const button = picker?.querySelector(`[data-difficulty="${state.difficulty}"]`);
+    if (picker && button) selectOption(picker, button);
+    const description = ctx.els.controlPanel.querySelector("#sudokuDifficultyDescription");
+    if (description) description.textContent = difficultyConfig[state.difficulty].description;
+  },
+
   newGame,
 
   mount(context) {

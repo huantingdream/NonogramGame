@@ -3,6 +3,8 @@ import { showToast } from './utils.js';
 import { getFirebase, getCurrentUser, onAuthChange, displayNameForUser } from './firebase.js';
 import { openAuthModal } from './account.js';
 import { celebrate, stopFireworks } from './fireworks.js';
+import { playSound } from './sound.js';
+import { wireShareButtons } from './share.js';
 
 let pendingScore = null;
 let scoreSubmitted = false;
@@ -12,6 +14,7 @@ let successMessage = '';
 let onNextGame = null;
 let victoryTimeout = null;
 let version = 0;
+let games = [];
 
 function els() {
   return {
@@ -96,12 +99,24 @@ export function showVictory({ summary, score, gameOver = false }) {
   window.clearTimeout(victoryTimeout);
   victoryTimeout = window.setTimeout(() => {
     dom.modal.showModal();
-    if (!gameOver) celebrate();
+    if (!gameOver) { celebrate(); playSound('win'); }
   }, 260);
 }
-export function initVictory({ onNext }) {
-  const dom = els(); onNextGame = onNext;
+export function initVictory({ onNext, games: registeredGames = [] }) {
+  const dom = els(); onNextGame = onNext; games = registeredGames;
   dom.scoreActionButton.addEventListener('click', submitScore);
+  wireShareButtons({
+    getPending() {
+      if (!pendingScore) return null;
+      const game = games.find((item) => item.id === pendingScore.game);
+      return {
+        gameName: game?.name || pendingScore.game,
+        gameIcon: game?.icon || '▦',
+        score: pendingScore,
+        summary: dom.summary.textContent
+      };
+    }
+  });
   dom.reviewButton.addEventListener('click', () => { if (pendingScore) dom.modal.showModal(); });
   dom.nextPuzzleButton.addEventListener('click', () => { closeVictory(); onNextGame?.(); });
   document.querySelector('[data-close-result]').addEventListener('click', () => dom.modal.close());

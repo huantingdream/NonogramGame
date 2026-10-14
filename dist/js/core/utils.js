@@ -8,7 +8,18 @@ export function makeSeededRandom(seed) {
   };
 }
 
+let pendingSeed = null;
+// 每日挑战等场景需要确定性出题：下一次 randomSeed() 返回指定种子并消耗掉它。
+export function setNextSeed(seed) {
+  pendingSeed = seed >>> 0;
+}
+
 export function randomSeed() {
+  if (pendingSeed !== null) {
+    const seed = pendingSeed;
+    pendingSeed = null;
+    return seed;
+  }
   return (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
 }
 

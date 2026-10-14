@@ -8,6 +8,10 @@ import { initVictory, showVictory, closeVictory } from "./core/victory.js";
 import { initLeaderboard } from "./core/leaderboard.js";
 import { animate, enterBoard, cancelMotion } from "./core/motion.js";
 import { initGamePicker } from "./core/game-picker.js";
+import { initTheme } from "./core/theme.js";
+import { initSound, playSound } from "./core/sound.js";
+import { initStats, recordPlay } from "./core/stats.js";
+import { initDaily, recordIfDaily } from "./core/daily.js";
 
 import nonogram from "./games/nonogram.js";
 import sudoku from "./games/sudoku.js";
@@ -15,11 +19,15 @@ import minesweeper from "./games/minesweeper.js";
 
 import twenty48 from "./games/twenty48.js";
 import { slitherlink, hashi } from "./games/line-puzzles.js";
+import netwalk from "./games/netwalk.js";
+import akari from "./games/akari.js";
+import nurikabe from "./games/nurikabe.js";
+import kenken from "./games/kenken.js";
 
 import { reaction, aim } from "./games/training.js";
 import watermelon from "./games/watermelon.js";
 
-const GAMES = [nonogram, sudoku, minesweeper, twenty48, slitherlink, hashi, watermelon, reaction, aim];
+const GAMES = [nonogram, sudoku, kenken, minesweeper, twenty48, slitherlink, hashi, nurikabe, akari, netwalk, watermelon, reaction, aim];
 const STORAGE_KEY = "gejian:lastGame";
 
 const statusLabels = {
@@ -47,9 +55,9 @@ const gameStatus = document.querySelector("#gameStatus");
 function setStatus(tone, customLabel = null) {
   gameStatus.textContent = customLabel || statusLabels[tone] || tone;
   gameStatus.dataset.tone = tone;
-  if (tone === 'incorrect') animate(document.querySelector('#gameRoot'), [
+  if (tone === 'incorrect') { animate(document.querySelector('#gameRoot'), [
     { translate: '0 0' }, { translate: '-4px 0' }, { translate: '4px 0' }, { translate: '0 0' }
-  ], { duration: 240 });
+  ], { duration: 240 }); playSound('error'); }
 }
 
 // ---------------------------------------------------------------------------
@@ -82,7 +90,10 @@ function buildGameContext(game) {
         { boxShadow: '0 0 0 5px rgba(23,70,209,.2)', offset: .4 },
         { boxShadow: '0 0 0 0 rgba(23,70,209,0)' }
       ], { duration: 500 });
-      showVictory({ summary, score: { ...score, game: game.id }, gameOver });
+      const finalScore = { ...score, game: game.id };
+      recordPlay(finalScore, gameOver);
+      recordIfDaily(finalScore, gameOver);
+      showVictory({ summary, score: finalScore, gameOver });
     }
   };
 }
@@ -105,6 +116,7 @@ function mountGame(gameId) {
   document.title = `格间 · ${game.name}`;
   document.querySelector("#howToTitle").textContent = game.howToTitle;
   document.querySelector("#howToContent").innerHTML = game.howTo;
+  document.querySelector("#guideLink").href = `./guide/${game.id}.html`;
 
   try {
     localStorage.setItem(STORAGE_KEY, game.id);
@@ -133,10 +145,15 @@ function initHowToModal() {
 
 gamePicker = initGamePicker({ games: GAMES, onSelect: mountGame });
 initHowToModal();
+initTheme();
+initSound();
 initAccount();
 initVictory({
-  onNext: () => currentGame?.newGame()
+  onNext: () => currentGame?.newGame(),
+  games: GAMES
 });
+initStats({ games: GAMES });
+initDaily({ games: GAMES, onSelect: mountGame });
 initLeaderboard({
   games: GAMES,
   getActiveGame: () => currentGame
