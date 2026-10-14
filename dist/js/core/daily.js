@@ -103,7 +103,7 @@ function render() {
     const difficulty = game.difficulties.find((option) => option.value === config.difficulty)?.label || '';
     const finished = done.has(game.id);
     return `<button type="button" class="daily-item ${finished ? 'done' : ''}" data-daily-game="${escapeHtml(game.id)}">
-      <span class="daily-item-icon" aria-hidden="true">${escapeHtml(game.icon || '▦')}</span>
+      <span class="daily-item-icon" aria-hidden="true"><img src="./assets/icons/game-${escapeHtml(game.id)}.svg" alt="" loading="lazy"></span>
       <span class="daily-item-copy"><strong>${escapeHtml(game.name)}</strong><small>${escapeHtml([size, difficulty].filter(Boolean).join(' · '))}</small></span>
       <span class="daily-item-state">${finished ? '✓ 已完成' : '未挑战'}</span>
     </button>`;

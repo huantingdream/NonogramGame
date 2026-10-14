@@ -31,7 +31,11 @@ export function initTheme() {
     meta.content = THEME_COLORS[theme];
     document.head.appendChild(meta);
     const dark = theme === "dark";
-    button.querySelector("span").textContent = dark ? "☀" : "☾";
+    const icon = button.querySelector(".icon");
+    if (icon) {
+      icon.classList.toggle("icon-sun", dark);
+      icon.classList.toggle("icon-moon", !dark);
+    }
     button.setAttribute("aria-label", dark ? "切换到浅色模式" : "切换到深色模式");
     button.setAttribute("aria-pressed", String(dark));
   }

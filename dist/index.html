@@ -10,6 +10,7 @@
       content="格间小游戏合集：数织 Nonogram、数独、扫雷、2048、数回、数桥、管道、点灯、数墙、聪明格、合成大西瓜、反应测试、瞄准训练，每日挑战与排行榜，附全游戏攻略。"
     />
     <title>格间 · 小游戏合集</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/icons/logo.svg" />
     <script>
       // 首屏前确定主题，避免深色用户看到白屏闪烁
       try {
@@ -28,13 +29,13 @@
       <header class="topbar">
         <a class="brand" href="#" aria-label="格间小游戏首页">
           <span class="brand-mark" aria-hidden="true">
-            <i></i><i></i><i></i><i></i>
+            <img src="./assets/icons/logo.svg" alt="" width="38" height="38" />
           </span>
           <span><strong>格间</strong><small id="brandSubtitle">NONOGRAM</small></span>
         </a>
 
         <button class="game-picker-button" id="gamePickerButton" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="gamePickerModal">
-          <span class="game-icon-tile" aria-hidden="true"><span class="game-icon">▦</span></span>
+          <span class="game-icon-tile" aria-hidden="true"><img class="game-icon" src="./assets/icons/logo.svg" alt="" width="38" height="38" /></span>
           <span class="game-picker-text">
             <strong class="current-game-name">选择游戏</strong>
             <span class="game-picker-label">切换游戏</span>
@@ -44,25 +45,25 @@
 
         <div class="topbar-actions">
           <button class="topbar-button" id="dailyButton" type="button">
-            <span aria-hidden="true">📅</span> 每日挑战
+            <span class="icon icon-daily" aria-hidden="true"></span> 每日挑战
           </button>
           <button class="topbar-button" id="statsButton" type="button">
-            <span aria-hidden="true">📊</span> 战绩
+            <span class="icon icon-stats" aria-hidden="true"></span> 战绩
           </button>
           <button class="topbar-button" id="leaderboardButton" type="button">
-            <span aria-hidden="true">♛</span> 排行榜
+            <span class="icon icon-leaderboard" aria-hidden="true"></span> 排行榜
           </button>
           <button class="topbar-button account-button" id="accountButton" type="button">
             <span class="account-dot" aria-hidden="true"></span><span id="accountButtonLabel">登录</span>
           </button>
           <button class="topbar-button icon-only" id="soundButton" type="button" aria-label="关闭音效" aria-pressed="true">
-            <span aria-hidden="true">🔊</span>
+            <span class="icon icon-sound" aria-hidden="true"></span>
           </button>
           <button class="topbar-button icon-only" id="themeButton" type="button" aria-label="切换到深色模式" aria-pressed="false">
-            <span aria-hidden="true">☾</span>
+            <span class="icon icon-moon" aria-hidden="true"></span>
           </button>
           <button class="how-to-button" id="howToButton" type="button" aria-expanded="false">
-            <span aria-hidden="true">?</span> 怎么玩
+            <span class="icon icon-help" aria-hidden="true"></span> 怎么玩
           </button>
         </div>
       </header>

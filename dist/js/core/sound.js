@@ -62,7 +62,11 @@ export function initSound() {
   if (!button) return;
 
   function apply() {
-    button.querySelector("span").textContent = enabled ? "🔊" : "🔇";
+    const icon = button.querySelector(".icon");
+    if (icon) {
+      icon.classList.toggle("icon-sound", enabled);
+      icon.classList.toggle("icon-sound-off", !enabled);
+    }
     button.setAttribute("aria-label", enabled ? "关闭音效" : "开启音效");
     button.setAttribute("aria-pressed", String(enabled));
   }

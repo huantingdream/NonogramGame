@@ -50,7 +50,7 @@ export function initGamePicker({ games, onSelect }) {
       const info = metadata(game);
       const active = game.id === activeId;
       return `<button type="button" class="game-card" data-game="${escapeHtml(game.id)}" ${active ? 'aria-current="true"' : ''}>
-        <span class="game-card-icon" aria-hidden="true">${escapeHtml(game.icon || '▦')}</span>
+        <span class="game-card-icon" aria-hidden="true"><img src="./assets/icons/game-${escapeHtml(game.id)}.svg" alt="" loading="lazy"></span>
         <span class="game-card-copy"><strong>${escapeHtml(game.name)}</strong><small>${escapeHtml(info.description)}</small></span>
         <span class="game-card-tag">${active ? '当前' : escapeHtml(info.category)}</span>
       </button>`;
@@ -127,7 +127,7 @@ export function initGamePicker({ games, onSelect }) {
     setActive(game) {
       activeId = game.id;
       trigger.querySelector('.current-game-name').textContent = game.name;
-      trigger.querySelector('.game-icon').textContent = game.icon || '▦';
+      trigger.querySelector('.game-icon').src = `./assets/icons/game-${game.id}.svg`;
       trigger.setAttribute('aria-label', `当前游戏：${game.name}，切换游戏`);
       recent = [game.id, ...recent.filter(id => id !== game.id)].slice(0, 3);
       try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); } catch (_) {}

@@ -78,7 +78,7 @@ function render() {
     .map((game) => {
       const best = bestByGame.get(game.id);
       const count = plays.filter((play) => play.game === game.id && !play.gameOver).length;
-      return `<div><span aria-hidden="true">${escapeHtml(game.icon || '▦')}</span> ${escapeHtml(game.name)} <small>${escapeHtml(configLabel(best))} · 完成 ${count} 次</small><strong>${escapeHtml(scoreLabel(best))}</strong></div>`;
+      return `<div><span class="stats-game-icon" aria-hidden="true"><img src="./assets/icons/game-${escapeHtml(game.id)}.svg" alt="" loading="lazy"></span> ${escapeHtml(game.name)} <small>${escapeHtml(configLabel(best))} · 完成 ${count} 次</small><strong>${escapeHtml(scoreLabel(best))}</strong></div>`;
     });
   bestList.innerHTML = bestRows.length ? bestRows.join('') : '<p class="stats-empty">还没有完成过任何一局，去玩一把吧。</p>';
 
@@ -88,7 +88,7 @@ function render() {
         const game = games.find((item) => item.id === play.game);
         const date = new Date(play.ts);
         const dateText = `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-        return `<div><span aria-hidden="true">${escapeHtml(game?.icon || '▦')}</span> ${escapeHtml(game?.name || play.game)} <small>${escapeHtml(configLabel(play))} · ${dateText}${play.gameOver ? ' · 未通关' : ''}</small><strong>${escapeHtml(scoreLabel(play))}</strong></div>`;
+        return `<div><span class="stats-game-icon" aria-hidden="true">${game ? `<img src="./assets/icons/game-${escapeHtml(game.id)}.svg" alt="" loading="lazy">` : ''}</span> ${escapeHtml(game?.name || play.game)} <small>${escapeHtml(configLabel(play))} · ${dateText}${play.gameOver ? ' · 未通关' : ''}</small><strong>${escapeHtml(scoreLabel(play))}</strong></div>`;
       }).join('')
     : '<p class="stats-empty">暂无记录。</p>';
 }

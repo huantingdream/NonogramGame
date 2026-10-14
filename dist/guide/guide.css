@@ -37,7 +37,8 @@ li::marker { color: var(--blue); font-weight: 800; }
   transition: border-color .15s ease, transform .15s ease;
 }
 .guide-card:hover { border-color: var(--blue); transform: translateY(-2px); }
-.guide-card-icon { font-size: 1.4rem; }
+.guide-card-icon { display: block; }
+.guide-card-icon img { display: block; width: 34px; height: 34px; border-radius: 8px; }
 .guide-card small { color: var(--muted); letter-spacing: .08em; }
 .guide-card p { margin: 6px 0 0; color: var(--muted); font-size: .85rem; line-height: 1.6; }
 .site-footer { max-width: 860px; margin: 0 auto; padding: 0 24px 30px; color: var(--muted); font-size: .8rem; }
