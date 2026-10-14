@@ -13,7 +13,8 @@ const GRAVITY = 1600, RESTITUTION = 0.08, AIR_DAMPING = 0.999, STEP = 1 / 120;
 const SLOP = 0.25;           // 允许的穿透余量（px），小于它不做位置修正
 const POS_CORRECT = 0.8;     // 每次迭代只修正 80% 的穿透，避免过冲引起的抖动
 const SOLVER_ITERATIONS = 4; // 每个子步的碰撞求解迭代次数，深穿透也能一帧内解开，减少穿模
-const REST_SPEED = 50;       // 低于该（相对）速度视为静置接触：不再反弹、切向锁死
+const REST_SPEED = 50;       // 低于该法向接近速度视为静置接触，不再反弹（防抖关键）
+const STATIC_SPEED = 10;     // 低于该切向滑动速度才锁死；高于此值保持低摩擦自然滚动
 const MAX_SPEED = 2400;      // 速度上限，防止单步位移过大穿透墙体或其他水果
 const CLEAR_BONUS = 100; // 两颗西瓜相撞湮灭的奖励分
 
@@ -73,10 +74,10 @@ function collidePair(a, b) {
   const impulse = -(1 + restitution) * vn / (1 / ma + 1 / mb);
   a.vx -= impulse * nx / ma; a.vy -= impulse * ny / ma;
   b.vx += impulse * nx / mb; b.vy += impulse * ny / mb;
-  // 切向摩擦：低速时视为静摩擦直接锁死相对滑动，否则只施加 8% 摩擦。
-  // 没有静摩擦时圆球会在堆里无限微滑，表现为持续的抖动。
+  // 切向摩擦：只有几乎不动的相对滑动才锁死（防止堆里无限微滑抖动），
+  // 其余情况只施加 8% 摩擦，让水果能自然地从彼此身上滚落
   const vt = rvx * -ny + rvy * nx;
-  const grip = Math.abs(vt) < REST_SPEED ? 1 : 0.08;
+  const grip = Math.abs(vt) < STATIC_SPEED ? 1 : 0.08;
   const tangent = -vt * grip / (1 / ma + 1 / mb);
   a.vx += tangent * ny / ma; a.vy -= tangent * nx / ma;
   b.vx -= tangent * ny / mb; b.vy += tangent * nx / mb;
@@ -95,8 +96,8 @@ function containFruit(fruit) {
   if (fruit.y > floor) {
     fruit.y = floor;
     fruit.vy = fruit.vy > REST_SPEED ? -fruit.vy * RESTITUTION : 0;
-    // 地面摩擦：低速时直接锁死，避免贴地水果永远微滑
-    fruit.vx = Math.abs(fruit.vx) < REST_SPEED ? 0 : fruit.vx * 0.98;
+    // 地面摩擦：几乎停住时才锁死，否则保留自然滑动衰减
+    fruit.vx = Math.abs(fruit.vx) < STATIC_SPEED ? 0 : fruit.vx * 0.98;
   }
 }
 
