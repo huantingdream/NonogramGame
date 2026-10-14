@@ -10,6 +10,11 @@ import { pop, enterBoard } from '../core/motion.js';
 
 const WIDTH = 400, HEIGHT = 580, WALL = 10, DANGER_Y = 132, SPAWN_Y = 70;
 const GRAVITY = 1600, RESTITUTION = 0.08, AIR_DAMPING = 0.999, STEP = 1 / 120;
+const SLOP = 0.25;           // 允许的穿透余量（px），小于它不做位置修正
+const POS_CORRECT = 0.8;     // 每次迭代只修正 80% 的穿透，避免过冲引起的抖动
+const SOLVER_ITERATIONS = 4; // 每个子步的碰撞求解迭代次数，深穿透也能一帧内解开，减少穿模
+const REST_SPEED = 50;       // 低于该（相对）速度视为静置接触：不再反弹、切向锁死
+const MAX_SPEED = 2400;      // 速度上限，防止单步位移过大穿透墙体或其他水果
 const CLEAR_BONUS = 100; // 两颗西瓜相撞湮灭的奖励分
 
 // 经典合成链：樱桃 → 草莓 → … → 大西瓜。value 为合成出该水果时的得分。
@@ -56,15 +61,23 @@ function collidePair(a, b) {
   const nx = dx / d, ny = dy / d;
   const ma = a.r * a.r, mb = b.r * b.r, total = ma + mb;
   const overlap = rr - d;
-  a.x -= nx * overlap * (mb / total); a.y -= ny * overlap * (mb / total);
-  b.x += nx * overlap * (ma / total); b.y += ny * overlap * (ma / total);
+  // Baumgarte 式位置修正：留一点 slop、每次只推一部分，堆叠时不会来回过冲抖动
+  const push = Math.max(overlap - SLOP, 0) * POS_CORRECT;
+  a.x -= nx * push * (mb / total); a.y -= ny * push * (mb / total);
+  b.x += nx * push * (ma / total); b.y += ny * push * (ma / total);
   const rvx = b.vx - a.vx, rvy = b.vy - a.vy;
   const vn = rvx * nx + rvy * ny;
   if (vn >= 0) return overlap;
-  const impulse = -(1 + RESTITUTION) * vn / (1 / ma + 1 / mb);
+  // 低速接触按完全非弹性处理，消除静置时的微弹跳（抖动的主要来源）
+  const restitution = -vn < REST_SPEED ? 0 : RESTITUTION;
+  const impulse = -(1 + restitution) * vn / (1 / ma + 1 / mb);
   a.vx -= impulse * nx / ma; a.vy -= impulse * ny / ma;
   b.vx += impulse * nx / mb; b.vy += impulse * ny / mb;
-  const tangent = -(rvx * -ny + rvy * nx) * 0.08 / (1 / ma + 1 / mb);
+  // 切向摩擦：低速时视为静摩擦直接锁死相对滑动，否则只施加 8% 摩擦。
+  // 没有静摩擦时圆球会在堆里无限微滑，表现为持续的抖动。
+  const vt = rvx * -ny + rvy * nx;
+  const grip = Math.abs(vt) < REST_SPEED ? 1 : 0.08;
+  const tangent = -vt * grip / (1 / ma + 1 / mb);
   a.vx += tangent * ny / ma; a.vy -= tangent * nx / ma;
   b.vx -= tangent * ny / mb; b.vy += tangent * nx / mb;
   return overlap;
@@ -72,9 +85,19 @@ function collidePair(a, b) {
 
 function containFruit(fruit) {
   const left = WALL + fruit.r, right = WIDTH - WALL - fruit.r, floor = HEIGHT - WALL - fruit.r;
-  if (fruit.x < left) { fruit.x = left; fruit.vx = Math.abs(fruit.vx) * RESTITUTION; }
-  else if (fruit.x > right) { fruit.x = right; fruit.vx = -Math.abs(fruit.vx) * RESTITUTION; }
-  if (fruit.y > floor) { fruit.y = floor; fruit.vy = -Math.abs(fruit.vy) * RESTITUTION; fruit.vx *= 0.98; }
+  if (fruit.x < left) {
+    fruit.x = left;
+    fruit.vx = fruit.vx < -REST_SPEED ? -fruit.vx * RESTITUTION : 0;
+  } else if (fruit.x > right) {
+    fruit.x = right;
+    fruit.vx = fruit.vx > REST_SPEED ? -fruit.vx * RESTITUTION : 0;
+  }
+  if (fruit.y > floor) {
+    fruit.y = floor;
+    fruit.vy = fruit.vy > REST_SPEED ? -fruit.vy * RESTITUTION : 0;
+    // 地面摩擦：低速时直接锁死，避免贴地水果永远微滑
+    fruit.vx = Math.abs(fruit.vx) < REST_SPEED ? 0 : fruit.vx * 0.98;
+  }
 }
 
 // 推进一帧。emit({ type: 'merge' | 'clear', level, x, y, gained }) 上报合成事件。
@@ -87,17 +110,30 @@ function step(state, dt, emit = () => {}) {
     for (const fruit of state.fruits) {
       fruit.vy += GRAVITY * h;
       fruit.vx *= AIR_DAMPING; fruit.vy *= AIR_DAMPING;
+      // 限制最高速度，避免单步位移过大直接穿过墙体或其他水果
+      const speed = Math.hypot(fruit.vx, fruit.vy);
+      if (speed > MAX_SPEED) {
+        fruit.vx *= MAX_SPEED / speed; fruit.vy *= MAX_SPEED / speed;
+      }
       fruit.x += fruit.vx * h; fruit.y += fruit.vy * h;
       containFruit(fruit);
+    }
+    // 多次迭代求解碰撞：合成出的大水果与邻居的深穿透能在一帧内基本解开
+    for (let iteration = 0; iteration < SOLVER_ITERATIONS; iteration++) {
+      for (let i = 0; i < state.fruits.length; i++) {
+        for (let j = i + 1; j < state.fruits.length; j++) {
+          collidePair(state.fruits[i], state.fruits[j]);
+        }
+      }
     }
     const pairs = [];
     const paired = new Set();
     for (let i = 0; i < state.fruits.length; i++) {
       for (let j = i + 1; j < state.fruits.length; j++) {
         const a = state.fruits[i], b = state.fruits[j];
-        const overlap = collidePair(a, b);
+        const gap = Math.hypot(b.x - a.x, b.y - a.y) - (a.r + b.r);
         // 接触（容差 2px）即合成，保证静置相靠的同級水果也会合并
-        if (overlap > -2 && a.level === b.level && !paired.has(a.id) && !paired.has(b.id) &&
+        if (gap < 2 && a.level === b.level && !paired.has(a.id) && !paired.has(b.id) &&
             state.t - a.born > 0.05 && state.t - b.born > 0.05) {
           paired.add(a.id); paired.add(b.id);
           pairs.push([a, b]);
@@ -132,7 +168,7 @@ function step(state, dt, emit = () => {}) {
 // ---------------------------------------------------------------------------
 
 const DROP_COOLDOWN = 0.45; // 秒
-const OVER_AFTER = 1.6;     // 水果持续越过警戒线多久后判负
+const OVER_AFTER = 3;       // 越过警戒线后的宽限秒数；期间水果全部回到线下即重置
 
 let ctx, controller, raf = 0;
 let canvas, g, state, seed, random;
@@ -221,9 +257,11 @@ function render() {
   g.fillRect(WIDTH - WALL, 0, WALL, HEIGHT);
   g.fillRect(0, HEIGHT - WALL, WIDTH, WALL);
 
-  // 警戒线
+  // 警戒线（警告时闪烁，并显示剩余宽限时间）
+  const flashing = !over && warning;
   g.save();
-  g.strokeStyle = warning ? '#e5484d' : (dark ? 'rgba(229,72,77,.45)' : 'rgba(229,72,77,.5)');
+  g.strokeStyle = flashing ? '#e5484d' : (dark ? 'rgba(229,72,77,.45)' : 'rgba(229,72,77,.5)');
+  g.globalAlpha = flashing ? 0.55 + 0.45 * Math.sin(state.t * 12) : 1;
   g.lineWidth = 2;
   g.setLineDash([8, 7]);
   g.beginPath();
@@ -248,6 +286,19 @@ function render() {
   }
 
   for (const fruit of state.fruits) drawFruit(fruit);
+
+  // 警告倒计时画在水果之上，堆得再高也看得见剩余时间
+  if (flashing) {
+    const remain = Math.max(0, OVER_AFTER - overTime);
+    g.save();
+    g.globalAlpha = 0.7 + 0.3 * Math.sin(state.t * 12);
+    g.fillStyle = '#e5484d';
+    g.font = '800 20px system-ui, sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'bottom';
+    g.fillText(`⚠ ${remain.toFixed(1)}s`, WIDTH / 2, DANGER_Y - 8);
+    g.restore();
+  }
 
   // 合成特效：扩散圆环 + 上浮加分
   effects = effects.filter(effect => state.t - effect.at < 0.7);
@@ -345,7 +396,7 @@ export default {
   icon: '🍉',
   subtitle: 'WATERMELON',
   howToTitle: '丢下水果，合成大西瓜',
-  howTo: '<p>移动鼠标或手指选择落点，点击、轻点或按空格丢下水果。</p><p><strong>相同的两个水果相碰就会合成更大的水果</strong>：樱桃 → 草莓 → 葡萄 → 橘子 → 柿子 → 苹果 → 梨 → 桃子 → 菠萝 → 甜瓜 → 大西瓜，越大的水果得分越高。两颗西瓜相撞会湮灭并获得额外奖励。</p><p>水果堆积越过顶部虚线并持续片刻，本局结束。结束后可以把得分上传排行榜。</p>',
+  howTo: '<p>移动鼠标或手指选择落点，点击、轻点或按空格丢下水果。</p><p><strong>相同的两个水果相碰就会合成更大的水果</strong>：樱桃 → 草莓 → 葡萄 → 橘子 → 柿子 → 苹果 → 梨 → 桃子 → 菠萝 → 甜瓜 → 大西瓜，越大的水果得分越高。两颗西瓜相撞会湮灭并获得额外奖励。</p><p>水果堆越过顶部虚线会触发 3 秒警告倒计时，期间继续丢水果、让堆叠回落到线下即可解除警报；倒计时归零本局结束。结束后可以把得分上传排行榜。</p>',
   sizes: [{ value: 450, label: '标准' }],
   difficulties: [{ value: 'normal', label: '经典' }],
   getScoreFilter: () => ({ size: 450, difficulty: 'normal' }),
@@ -365,7 +416,7 @@ export default {
     ctx.els.gameRoot.innerHTML = `
       <div class="watermelon-stage"><canvas id="wmCanvas" aria-label="合成大西瓜棋盘"></canvas></div>`;
     ctx.els.boardToolbar.innerHTML = '';
-    ctx.els.desktopTip.textContent = '移动瞄准 · 点击 / 空格丢下 · 水果越过虚线即结束';
+    ctx.els.desktopTip.textContent = '移动瞄准 · 点击 / 空格丢下 · 越过虚线 3 秒内未回落即结束';
 
     canvas = ctx.els.gameRoot.querySelector('#wmCanvas');
     g = canvas.getContext('2d');
