@@ -560,6 +560,18 @@ async function initGlassBackground() {
   for (const scene of scenes) scene.host.prepend(scene.canvas);
   document.documentElement.classList.add('glass-on');
 
+  // 游戏挂载 / 切换时会重写 controlPanel 的 innerHTML，把画布一起抹掉。
+  // 监听宿主子节点变化，画布一旦丢失就重新插回最底层（prepend 触发二次回调时因已就位而直接返回，不会死循环）。
+  const panelScene = scenes.find((scene) => scene.mode === 1);
+  if (panelScene) {
+    new MutationObserver(() => {
+      if (panelScene.canvas.parentNode === panelScene.host) return;
+      panelScene.host.prepend(panelScene.canvas);
+      resize();
+      if (motionQuery.matches) staticFrame();
+    }).observe(panelScene.host, { childList: true });
+  }
+
   const darkQuery = matchMedia('(prefers-color-scheme: dark)');
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
   const uniforms = new Float32Array(12);
