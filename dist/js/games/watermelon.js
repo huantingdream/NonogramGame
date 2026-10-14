@@ -9,12 +9,12 @@ import { pop, enterBoard } from '../core/motion.js';
 // ---------------------------------------------------------------------------
 
 const WIDTH = 400, HEIGHT = 580, WALL = 10, DANGER_Y = 132, SPAWN_Y = 70;
-const GRAVITY = 1600, RESTITUTION = 0.08, AIR_DAMPING = 0.999, STEP = 1 / 120;
-const SLOP = 0.25;           // 允许的穿透余量（px），小于它不做位置修正
+const GRAVITY = 1600, RESTITUTION = 0.08, AIR_DAMPING = 0.9999, STEP = 1 / 120;
+const SLOP = 0.1;            // 允许的穿透余量（px），小于它不做位置修正；小余量让水果看起来刚好相贴而非相嵌
 const POS_CORRECT = 0.8;     // 每次迭代只修正 80% 的穿透，避免过冲引起的抖动
-const SOLVER_ITERATIONS = 4; // 每个子步的碰撞求解迭代次数，深穿透也能一帧内解开，减少穿模
+const SOLVER_ITERATIONS = 6; // 每个子步的碰撞求解迭代次数，拥挤堆叠和深穿透也能一帧内解开
 const REST_SPEED = 50;       // 低于该法向接近速度视为静置接触，不再反弹（防抖关键）
-const STATIC_SPEED = 10;     // 低于该切向滑动速度才锁死；高于此值保持低摩擦自然滚动
+const STATIC_SPEED = 5;      // 低于该切向滑动速度才锁死；高于此值保持低摩擦自然滚动
 const MAX_SPEED = 2400;      // 速度上限，防止单步位移过大穿透墙体或其他水果
 const CLEAR_BONUS = 100; // 两颗西瓜相撞湮灭的奖励分
 
@@ -96,8 +96,8 @@ function containFruit(fruit) {
   if (fruit.y > floor) {
     fruit.y = floor;
     fruit.vy = fruit.vy > REST_SPEED ? -fruit.vy * RESTITUTION : 0;
-    // 地面摩擦：几乎停住时才锁死，否则保留自然滑动衰减
-    fruit.vx = Math.abs(fruit.vx) < STATIC_SPEED ? 0 : fruit.vx * 0.98;
+    // 地面摩擦：轻微衰减让贴地水果自然停住，只有几乎不动时才锁死
+    fruit.vx = Math.abs(fruit.vx) < STATIC_SPEED ? 0 : fruit.vx * 0.995;
   }
 }
 
@@ -119,8 +119,10 @@ function step(state, dt, emit = () => {}) {
       fruit.x += fruit.vx * h; fruit.y += fruit.vy * h;
       containFruit(fruit);
     }
-    // 多次迭代求解碰撞：合成出的大水果与邻居的深穿透能在一帧内基本解开
+    // 多次迭代求解碰撞：合成出的大水果与邻居的深穿透能在一帧内基本解开。
+    // 每轮迭代先约束墙体再解开水果对，避免角落里的水果被墙 clamp 重新顶回邻居体内
     for (let iteration = 0; iteration < SOLVER_ITERATIONS; iteration++) {
+      for (const fruit of state.fruits) containFruit(fruit);
       for (let i = 0; i < state.fruits.length; i++) {
         for (let j = i + 1; j < state.fruits.length; j++) {
           collidePair(state.fruits[i], state.fruits[j]);
