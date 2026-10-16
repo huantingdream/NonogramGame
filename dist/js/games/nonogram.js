@@ -366,12 +366,13 @@ function lineMatchesClues(playerLine, expectedClues) {
     && currentClues.every((value, index) => value === expectedClues[index]);
 }
 
-// 荧光扫光的共用关键帧：一圈荧光描边流过格子，不缩放、不位移，干净利落
+// 扫光共用关键帧：白色亮光洗过格子（任何底色上都只变亮、不发黑），
+// 顶部压一圈细荧光描边勾出轨迹，像一束光沿行列流过
 function glowSweepFrames() {
   return [
-    { boxShadow: "inset 0 0 0 2px rgba(226,255,84,0), inset 0 0 0 0 rgba(226,255,84,0)" },
-    { boxShadow: "inset 0 0 0 2px rgba(226,255,84,.95), inset 0 0 14px rgba(226,255,84,.5)", offset: 0.35 },
-    { boxShadow: "inset 0 0 0 0 rgba(226,255,84,0), inset 0 0 0 0 rgba(226,255,84,0)" }
+    { boxShadow: "inset 0 0 0 0 rgba(226,255,84,0), inset 0 0 0 0 rgba(255,255,255,0)", filter: "brightness(1)" },
+    { boxShadow: "inset 0 0 0 2px rgba(226,255,84,.9), inset 0 0 0 100px rgba(255,255,255,.45)", filter: "brightness(1.12)", offset: 0.38 },
+    { boxShadow: "inset 0 0 0 0 rgba(226,255,84,0), inset 0 0 0 0 rgba(255,255,255,0)", filter: "brightness(1)" }
   ];
 }
 
