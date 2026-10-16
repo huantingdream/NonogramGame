@@ -46,6 +46,7 @@ const recipes = {
   fill: () => tone({ frequency: 520, duration: 0.06, type: "triangle", volume: 0.08 }),
   mark: () => tone({ frequency: 330, duration: 0.05, type: "square", volume: 0.04 }),
   rotate: () => tone({ frequency: 440, duration: 0.05, type: "triangle", volume: 0.07 }),
+  connect: () => { tone({ frequency: 660, duration: 0.06, type: "sine", volume: 0.07 }); tone({ frequency: 990, duration: 0.08, type: "sine", volume: 0.06, delay: 0.05 }); },
   merge: () => { tone({ frequency: 392, duration: 0.07, type: "triangle" }); tone({ frequency: 587, duration: 0.09, type: "triangle", delay: 0.05 }); },
   error: () => tone({ frequency: 180, duration: 0.18, type: "sawtooth", volume: 0.07 }),
   win: () => [523, 659, 784, 1047].forEach((frequency, i) => tone({ frequency, duration: 0.16, type: "triangle", volume: 0.1, delay: i * 0.09 }))

@@ -11,7 +11,7 @@ export function rotateMask(mask, times = 1) {
   return value;
 }
 
-const NETWALK_DIRECTIONS = [
+export const NETWALK_DIRECTIONS = [
   { bit: 1, dr: -1, dc: 0, opposite: 4 },
   { bit: 2, dr: 0, dc: 1, opposite: 8 },
   { bit: 4, dr: 1, dc: 0, opposite: 1 },
