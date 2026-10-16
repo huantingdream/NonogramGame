@@ -119,8 +119,12 @@ async function mountGame(gameId) {
       { opacity: 0, translate: '0 14px' }
     ], { duration: 150, fill: 'forwards' });
     if (leaving) {
-      await leaving.finished.catch(() => {});
-      leaving.cancel(); // 动画已结束：主动取消，清掉 forwards 填充，否则新棋盘会停在透明状态
+      // 兜底 400ms：动画若因后台节流等原因永远不完结，也不能让挂载卡死
+      await Promise.race([
+        leaving.finished,
+        new Promise((resolve) => setTimeout(resolve, 400))
+      ]).catch(() => {});
+      leaving.cancel(); // 动画已结束或被兜底：主动取消，清掉 forwards 填充，否则新棋盘会停在透明状态
     }
     if (seq !== mountSeq) return; // 等待期间又切了别的游戏，放弃这次挂载
   }

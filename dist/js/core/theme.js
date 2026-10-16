@@ -60,6 +60,10 @@ export function initTheme() {
     const x = rect.left + rect.width / 2;
     const y = rect.top + rect.height / 2;
     const transition = document.startViewTransition(() => apply(next));
+    // 兜底：快照就绪若卡住（标签页切后台等情况），800ms 后强制跳过过渡。
+    // 卡住的视图过渡会让整页命中测试失灵（点击全部落空），绝不能让它挂着。
+    const bail = setTimeout(() => { try { transition.skipTransition(); } catch (_) {} }, 800);
+    transition.finished.catch(() => {}).finally(() => clearTimeout(bail));
     transition.ready.then(() => {
       const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
       document.documentElement.animate(
