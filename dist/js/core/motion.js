@@ -29,6 +29,10 @@ export function pop(element, delay = 0) {
 export function enterBoard(element) {
   animate(element, [{ opacity: 0, translate: '0 8px' }, { opacity: 1, translate: '0 0' }], { duration: 280 });
 }
+// 一组元素依次弹跳入场（列表渲染、成绩面板等），延迟封顶避免末尾太迟。
+export function staggerPop(elements, step = 45, maxDelay = 480) {
+  [...elements].forEach((element, index) => pop(element, Math.min(index * step, maxDelay)));
+}
 export function cancelMotion(root) {
   for (const animation of running) {
     const element = animation.effect?.target;

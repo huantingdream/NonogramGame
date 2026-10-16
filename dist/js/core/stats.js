@@ -1,6 +1,7 @@
 // 个人战绩：本机记录每一局结果（最多保留 300 条），展示总览、各游戏最佳与最近成绩。
 import { escapeHtml, formatElapsed } from './utils.js';
 import { scoreLabel } from './score.js';
+import { pop, staggerPop } from './motion.js';
 
 const STATS_KEY = 'gejian:stats';
 const MAX_PLAYS = 300;
@@ -91,6 +92,11 @@ function render() {
         return `<div><span class="stats-game-icon" aria-hidden="true">${game ? `<img src="./assets/icons/game-${escapeHtml(game.id)}.svg" alt="" loading="lazy">` : ''}</span> ${escapeHtml(game?.name || play.game)} <small>${escapeHtml(configLabel(play))} · ${dateText}${play.gameOver ? ' · 未通关' : ''}</small><strong>${escapeHtml(scoreLabel(play))}</strong></div>`;
       }).join('')
     : '<p class="stats-empty">暂无记录。</p>';
+
+  // 总览数字与两行列表依次弹入
+  overview.querySelectorAll('strong').forEach((element, index) => pop(element, index * 70));
+  staggerPop(bestList.querySelectorAll(':scope > div'), 40, 300);
+  staggerPop(recentList.querySelectorAll(':scope > div'), 30, 240);
 }
 
 export function initStats({ games: registeredGames }) {

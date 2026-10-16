@@ -41,6 +41,7 @@ const statusLabels = {
 let currentGame = null;
 let currentGameId = null;
 let gamePicker;
+let mountSeq = 0;
 
 // ---------------------------------------------------------------------------
 // 计时与状态
@@ -48,12 +49,20 @@ let gamePicker;
 
 const timerOutput = document.querySelector("#timer");
 const timer = createTimer((seconds) => {
-  timerOutput.textContent = formatElapsed(seconds);
+  const text = formatElapsed(seconds);
+  if (timerOutput.textContent === text) return;
+  timerOutput.textContent = text;
+  // 数字变化时轻轻上浮浮现，跳秒不那么生硬
+  animate(timerOutput, [{ translate: '0 3px', opacity: .3 }, { translate: '0 0', opacity: 1 }], { duration: 200 });
 });
 
 const gameStatus = document.querySelector("#gameStatus");
 function setStatus(tone, customLabel = null) {
-  gameStatus.textContent = customLabel || statusLabels[tone] || tone;
+  const label = customLabel || statusLabels[tone] || tone;
+  if (gameStatus.textContent !== label) {
+    gameStatus.textContent = label;
+    animate(gameStatus, [{ translate: '0 7px', opacity: 0 }, { translate: '0 0', opacity: 1 }], { duration: 220 });
+  }
   gameStatus.dataset.tone = tone;
   if (tone === 'incorrect') { animate(document.querySelector('#gameRoot'), [
     { translate: '0 0' }, { translate: '-4px 0' }, { translate: '4px 0' }, { translate: '0 0' }
@@ -98,9 +107,23 @@ function buildGameContext(game) {
   };
 }
 
-function mountGame(gameId) {
+async function mountGame(gameId) {
   const game = GAMES.find((item) => item.id === gameId) || GAMES[0];
   if (currentGameId === game.id) return;
+  const seq = ++mountSeq;
+
+  // 旧棋盘先淡出下沉，再挂载新游戏；减少动态时 animate 返回 null，直接继续
+  if (currentGame) {
+    const leaving = animate(document.querySelector("#gameRoot"), [
+      { opacity: 1, translate: '0 0' },
+      { opacity: 0, translate: '0 14px' }
+    ], { duration: 150, fill: 'forwards' });
+    if (leaving) {
+      await leaving.finished.catch(() => {});
+      leaving.cancel(); // 动画已结束：主动取消，清掉 forwards 填充，否则新棋盘会停在透明状态
+    }
+    if (seq !== mountSeq) return; // 等待期间又切了别的游戏，放弃这次挂载
+  }
 
   closeVictory();
   cancelMotion(document.querySelector(".game-layout"));
@@ -167,6 +190,16 @@ try {
   else if (saved && GAMES.some((game) => game.id === saved)) initialGame = saved;
 } catch (_) {}
 mountGame(initialGame);
+
+// 首屏：顶栏与棋盘卡片依次浮入，第一印象更精致
+animate(document.querySelector(".topbar"), [
+  { opacity: 0, translate: '0 -10px' },
+  { opacity: 1, translate: '0 0' }
+], { duration: 380, fill: 'backwards' });
+animate(document.querySelector(".board-card"), [
+  { opacity: 0, translate: '0 18px' },
+  { opacity: 1, translate: '0 0' }
+], { duration: 420, delay: 110, fill: 'backwards' });
 
 // Firebase 异步连接；失败时游戏照常可玩，仅登录与排行榜停用。
 initFirebase().then((firebase) => {

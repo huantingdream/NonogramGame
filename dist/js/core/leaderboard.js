@@ -2,7 +2,8 @@ import { scoreHeading, scoreLabel, scoreDetail } from './score.js';
 // 排行榜弹窗（所有游戏共享，按 游戏 + 规格 + 难度 筛选）。
 
 import { escapeHtml, showToast } from "./utils.js";
-import { getFirebase, getCurrentUser, onAuthChange } from "./firebase.js";
+import { getFirebase, getCurrentUser, onAuthChange, displayNameForUser } from "./firebase.js";
+import { staggerPop } from "./motion.js";
 import { openAuthModal } from "./account.js";
 
 let games = [];
@@ -72,14 +73,18 @@ async function loadLeaderboard() {
       return;
     }
     dom.state.textContent = `前 ${scores.length} 名`;
+    // 自己的名次高亮成荧光描边，一眼找到
+    const user = getCurrentUser();
+    const myName = user ? displayNameForUser(user) : null;
     dom.list.innerHTML = scores.map((score, index) => `
-      <li>
+      <li class="${myName && score.nickname === myName ? 'is-me' : ''}">
         <span class="rank">${index + 1}</span>
         <strong>${escapeHtml(score.nickname)}</strong>
         <small>${escapeHtml(scoreDetail(score))}</small>
         <strong class="rank-value">${escapeHtml(scoreLabel(score))}</strong>
       </li>
     `).join("");
+    staggerPop(dom.list.children, 42, 420);
   } catch (error) {
     if (version !== requestVersion) return;
     dom.state.textContent = error?.code === "permission-denied"

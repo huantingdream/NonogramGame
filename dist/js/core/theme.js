@@ -49,6 +49,23 @@ export function initTheme() {
   button.addEventListener("click", () => {
     const next = currentTheme() === "dark" ? "light" : "dark";
     try { localStorage.setItem(THEME_KEY, next); } catch (_) {}
-    apply(next);
+
+    // 支持 View Transitions 且未要求减少动态时：从按钮位置圆形扩散揭开新主题
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (typeof document.startViewTransition !== "function" || reduceMotion) {
+      apply(next);
+      return;
+    }
+    const rect = button.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const transition = document.startViewTransition(() => apply(next));
+    transition.ready.then(() => {
+      const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+      document.documentElement.animate(
+        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+        { duration: 520, easing: "cubic-bezier(.2,.75,.25,1)", pseudoElement: "::view-transition-new(root)" }
+      );
+    }).catch(() => {});
   });
 }

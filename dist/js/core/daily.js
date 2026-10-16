@@ -1,6 +1,7 @@
 // 每日挑战：日期 + 游戏 + 规格 推出确定性种子，所有玩家同题；
 // 完成任意一款即打卡，连续打卡天数持久化在本机。
 import { escapeHtml, setNextSeed, showToast } from './utils.js';
+import { pop } from './motion.js';
 
 const DAILY_KEY = 'gejian:daily';
 
@@ -95,8 +96,14 @@ function render() {
   const done = new Set(completed[key] || []);
   const list = dailyGames();
   document.querySelector('#dailyDate').textContent = `${key.replaceAll('-', ' / ')} · 共 ${list.length} 款`;
-  document.querySelector('#dailyStreak').textContent = `${currentStreak()} 天`;
-  document.querySelector('#dailyProgress').textContent = `${done.size} / ${list.length}`;
+  // 连续打卡 3 天起带小火苗，数字弹一下强化反馈
+  const streak = currentStreak();
+  const streakEl = document.querySelector('#dailyStreak');
+  streakEl.innerHTML = `${streak >= 3 ? '<span class="streak-flame" aria-hidden="true">🔥</span> ' : ''}${streak} 天`;
+  const progressEl = document.querySelector('#dailyProgress');
+  progressEl.textContent = `${done.size} / ${list.length}`;
+  pop(streakEl);
+  pop(progressEl, 70);
   document.querySelector('#dailyList').innerHTML = list.map((game) => {
     const config = DAILY_CONFIG[game.id];
     const size = game.sizes.find((option) => Number(option.value) === config.size)?.label || '';

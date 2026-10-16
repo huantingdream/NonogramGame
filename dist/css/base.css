@@ -615,7 +615,34 @@ html.glass-on .control-panel > .mini-guide { position: absolute; }
 @keyframes sheet-arrive { from { opacity: .4; translate: 0 64px; } to { opacity: 1; translate: 0 0; } }
 @keyframes backdrop-arrive { from { opacity: 0; } to { opacity: 1; } }
 @keyframes victory-arrive { 0% { scale: .65; opacity: 0; } 65% { scale: 1.12; opacity: 1; } 100% { scale: 1; opacity: 1; } }
+
+/* 主题切换圆形扩散：关掉默认交叉淡化，新主题快照由 JS 的 clip-path 动画揭开 */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 .result-button { margin-top: 12px; }
+/* 排行榜里自己的名次：荧光描边 + 呼吸光环 */
+.leaderboard-list li.is-me {
+  background: var(--blue-soft);
+  border-radius: 10px;
+  border-bottom-color: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--blue);
+}
+.leaderboard-list li.is-me .rank { box-shadow: 0 0 0 3px rgba(226, 255, 84, 0.55); }
+@media (prefers-reduced-motion: no-preference) {
+  .leaderboard-list li.is-me { animation: me-glow 2.2s ease-in-out infinite; }
+}
+@keyframes me-glow {
+  0%, 100% { box-shadow: inset 0 0 0 1.5px var(--blue), 0 0 0 0 rgba(37, 71, 228, 0.28); }
+  50% { box-shadow: inset 0 0 0 1.5px var(--blue), 0 0 18px 2px rgba(37, 71, 228, 0.28); }
+}
+/* 每日挑战连续打卡火苗 */
+.streak-flame { display: inline-block; }
+@media (prefers-reduced-motion: no-preference) {
+  .streak-flame { animation: flame-flicker 0.9s ease-in-out infinite; transform-origin: 50% 90%; }
+}
+@keyframes flame-flicker {
+  0%, 100% { transform: scale(1) rotate(-3deg); }
+  50% { transform: scale(1.14) rotate(3deg); }
+}
 .leaderboard-list .rank-value { color: var(--blue); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: .85rem; }
 .leaderboard-list li { grid-template-columns: 28px minmax(64px, 1fr) auto minmax(70px, auto); }
 @media (max-width: 620px) {
@@ -679,6 +706,8 @@ html.glass-on .control-panel > .mini-guide { position: absolute; }
 [data-theme="dark"] .danger-button { background: #3a1d24; border-color: #6b2f35; }
 [data-theme="dark"] .victory-score-card { background: #1b2344; border-color: #2c3766; }
 [data-theme="dark"] .game-card:hover { background: #1c2547; }
+[data-theme="dark"] .leaderboard-list li.is-me { background: rgba(93, 125, 255, 0.14); }
+[data-theme="dark"] .leaderboard-list li.is-me .rank { box-shadow: 0 0 0 3px rgba(226, 255, 84, 0.3); }
 [data-theme="dark"] .modal::before { background: #3a4260; }
 
 @media (max-width: 620px) {

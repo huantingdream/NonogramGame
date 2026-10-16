@@ -584,6 +584,10 @@ async function initGlassBackground() {
   let celebTarget = 0;
   // 大球成型瞬间的彩虹色散爆发，指数衰减
   let burst = 0;
+  // 主题明暗在着色器里平滑过渡，而不是 0/1 硬切
+  const isDark = () => document.documentElement.dataset.theme === 'dark' ? 1 : 0;
+  let darkTarget = isDark();
+  let darkValue = darkTarget;
   const victoryModal = document.getElementById('victoryModal');
   if (victoryModal) {
     new MutationObserver(() => {
@@ -603,6 +607,12 @@ async function initGlassBackground() {
     targetY = e.clientY / innerHeight;
   }, { passive: true });
 
+  // 点击页面时背景玻璃珠泛起一小圈色散涟漪，让背景和操作产生对话感
+  addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || motionQuery.matches) return;
+    burst = Math.max(burst, 0.5);
+  }, { passive: true });
+
   function resize() {
     for (const scene of scenes) {
       const box = scene.mode === 0
@@ -616,7 +626,7 @@ async function initGlassBackground() {
   }
 
   function draw(time) {
-    const dark = document.documentElement.dataset.theme === 'dark' ? 1 : 0;
+    const dark = darkValue;
     for (const scene of scenes) {
       uniforms[0] = scene.canvas.width;
       uniforms[1] = scene.canvas.height;
@@ -649,6 +659,10 @@ async function initGlassBackground() {
     celeb += (celebTarget - celeb) * Math.min(1, dt / 600);
     burst *= Math.exp(-dt / 450);
     if (burst < 0.01) burst = 0;
+    // 明暗过渡约 300ms 收敛，配合页面主题切换的圆形扩散
+    darkTarget = isDark();
+    darkValue += (darkTarget - darkValue) * Math.min(1, dt / 140);
+    if (Math.abs(darkTarget - darkValue) < 0.004) darkValue = darkTarget;
     draw((now - t0) / 1000 + 20);
     rafId = requestAnimationFrame(frameAdaptive);
   }
@@ -656,6 +670,7 @@ async function initGlassBackground() {
   function staticFrame() {
     cancelAnimationFrame(rafId);
     rafId = 0;
+    darkValue = darkTarget = isDark();
     draw(20);
   }
 

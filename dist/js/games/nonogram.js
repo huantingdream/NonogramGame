@@ -1,4 +1,4 @@
-import { pop, enterBoard } from '../core/motion.js';
+import { pop, enterBoard, motionEnabled } from '../core/motion.js';
 // 数织 Nonogram：根据行列数字线索填出隐藏图案。
 // 题目由种子确定性生成，并验证只有一个正确解。
 
@@ -30,6 +30,8 @@ const state = {
   puzzleSeed: 0,
   isPointerDown: false,
   dragValue: null,
+  solvedRows: new Set(),
+  solvedCols: new Set(),
   active: false
 };
 
@@ -292,6 +294,7 @@ function getLayoutMetrics() {
 
 function renderGrid() {
   if (!state.active || state.solution.length !== state.size) return;
+  hoverKey = null;
   const grid = els.grid;
   const { rowClues, colClues } = getAllClues();
   const { cellSize, clueWidth, clueHeight, clueFontSize } = getLayoutMetrics();
@@ -334,11 +337,13 @@ function renderGrid() {
     }
   });
 
-  renderPlayerState();
+  state.solvedRows.clear();
+  state.solvedCols.clear();
+  renderPlayerState({ silent: true });
   enterBoard(grid);
 }
 
-function renderPlayerState() {
+function renderPlayerState({ silent = false } = {}) {
   els.grid.querySelectorAll(".cell").forEach((cell) => {
     const row = Number(cell.dataset.row);
     const col = Number(cell.dataset.col);
@@ -352,7 +357,7 @@ function renderPlayerState() {
     const label = value === 1 ? "已填色" : value === -1 ? "已标为空格" : "空白";
     cell.setAttribute("aria-label", `第 ${row + 1} 行，第 ${col + 1} 列，${label}`);
   });
-  updateClueCompletion();
+  updateClueCompletion(silent);
 }
 
 function lineMatchesClues(playerLine, expectedClues) {
@@ -361,19 +366,36 @@ function lineMatchesClues(playerLine, expectedClues) {
     && currentClues.every((value, index) => value === expectedClues[index]);
 }
 
-function updateClueCompletion() {
+// 一行／一列刚被解出时，光点沿该行（列）依次弹跳扫过
+function sweepLine(axis, index) {
+  if (!motionEnabled()) return;
+  const step = state.size <= 5 ? 34 : state.size === 10 ? 24 : 16;
+  for (let i = 0; i < state.size; i += 1) {
+    const row = axis === "row" ? index : i;
+    const col = axis === "row" ? i : index;
+    pop(els.grid.querySelector(`[data-row="${row}"][data-col="${col}"]`), i * step);
+  }
+}
+
+function updateClueCompletion(silent = false) {
   if (state.solution.length !== state.size || state.player.length !== state.size) return;
   const { rowClues, colClues } = getAllClues();
 
   for (let row = 0; row < state.size; row += 1) {
     const solved = lineMatchesClues(state.player[row], rowClues[row]);
     els.grid.querySelector(`[data-row-clue="${row}"]`)?.classList.toggle("solved", solved);
+    const wasSolved = state.solvedRows.has(row);
+    if (solved) state.solvedRows.add(row); else state.solvedRows.delete(row);
+    if (solved && !wasSolved && !silent) sweepLine("row", row);
   }
 
   for (let col = 0; col < state.size; col += 1) {
     const playerColumn = state.player.map((row) => row[col]);
     const solved = lineMatchesClues(playerColumn, colClues[col]);
     els.grid.querySelector(`[data-col-clue="${col}"]`)?.classList.toggle("solved", solved);
+    const wasSolved = state.solvedCols.has(col);
+    if (solved) state.solvedCols.add(col); else state.solvedCols.delete(col);
+    if (solved && !wasSolved && !silent) sweepLine("col", col);
   }
 }
 
@@ -449,6 +471,7 @@ function submitPuzzle() {
   ctx.timer.stop();
   setCluesCompleted(true);
   ctx.setStatus("correct");
+  playBoardWave();
   ctx.reportWin({
     summary: `你用 ${ctx.timerText()} 完成了这道 ${state.size} × ${state.size} 数织。`,
     score: {
@@ -514,7 +537,41 @@ function continuePointerDrag(cell) {
   if (!state.isPointerDown || !cell) return;
   const row = Number(cell.dataset.row);
   const col = Number(cell.dataset.col);
-  if (state.player[row][col] !== state.dragValue) applyTool(cell, state.dragValue, { recordHistory: false });
+  if (state.player[row][col] !== state.dragValue) {
+    applyTool(cell, state.dragValue, { recordHistory: false });
+    // 拖涂经过的格子闪一圈荧光描边，轨迹更清晰
+    cell.classList.add("drag-flash");
+    cell.addEventListener("animationend", () => cell.classList.remove("drag-flash"), { once: true });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 十字高亮与通关波浪
+// ---------------------------------------------------------------------------
+
+let hoverKey = null;
+
+// 悬停／聚焦某格时，整行整列与两侧线索一起提亮，定位更稳
+function highlightAt(cell) {
+  const key = cell ? `${cell.dataset.row},${cell.dataset.col}` : null;
+  if (key === hoverKey) return;
+  hoverKey = key;
+  els.grid.querySelectorAll(".ch-line, .ch-active").forEach((element) => element.classList.remove("ch-line", "ch-active"));
+  if (!cell) return;
+  const row = Number(cell.dataset.row);
+  const col = Number(cell.dataset.col);
+  els.grid.querySelectorAll(`.cell[data-row="${row}"], .cell[data-col="${col}"]`).forEach((element) => element.classList.add("ch-line"));
+  els.grid.querySelector(`[data-row-clue="${row}"]`)?.classList.add("ch-active");
+  els.grid.querySelector(`[data-col-clue="${col}"]`)?.classList.add("ch-active");
+}
+
+// 通关时格子从左上角开始波浪式弹跳；胜利弹窗关掉后再回放一次
+function playBoardWave() {
+  if (!motionEnabled()) return;
+  const step = state.size <= 5 ? 42 : state.size === 10 ? 26 : 18;
+  els.grid.querySelectorAll(".cell").forEach((cell) => {
+    pop(cell, (Number(cell.dataset.row) + Number(cell.dataset.col)) * step);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -636,15 +693,31 @@ function mountBoard() {
   });
 
   els.grid.addEventListener("pointerover", (event) => {
-    continuePointerDrag(event.target.closest(".cell"));
+    const cell = event.target.closest(".cell");
+    highlightAt(cell);
+    continuePointerDrag(cell);
+  });
+
+  els.grid.addEventListener("pointerleave", () => highlightAt(null));
+  els.grid.addEventListener("focusin", (event) => highlightAt(event.target.closest(".cell")));
+  els.grid.addEventListener("focusout", () => {
+    if (!els.grid.contains(document.activeElement)) highlightAt(null);
   });
 
   els.grid.addEventListener("pointermove", (event) => {
     if (!state.isPointerDown) return;
     event.preventDefault();
     const target = document.elementFromPoint(event.clientX, event.clientY);
-    continuePointerDrag(target?.closest(".cell"));
+    const cell = target?.closest(".cell");
+    highlightAt(cell);
+    continuePointerDrag(cell);
   });
+
+  // 关掉胜利弹窗后棋盘重新露出，波浪再回放一次
+  const victoryModal = document.querySelector("#victoryModal");
+  const onVictoryClose = () => { if (state.active && state.completed) playBoardWave(); };
+  victoryModal?.addEventListener("close", onVictoryClose);
+  cleanups.push(() => victoryModal?.removeEventListener("close", onVictoryClose));
 
   const stopDrag = () => { state.isPointerDown = false; state.dragValue = null; };
   window.addEventListener("pointerup", stopDrag);
@@ -867,6 +940,7 @@ export default {
     state.generationRequestId += 1;
     state.generating = false;
     state.isPointerDown = false;
+    hoverKey = null;
     cleanups.splice(0).forEach((cleanup) => cleanup());
     els = {};
     ctx = null;
