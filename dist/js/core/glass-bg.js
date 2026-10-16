@@ -14,6 +14,8 @@ struct Uniforms {
   mouse : vec2f,
   mode_celeb : vec2f,
   burst_pad : vec2f,
+  click_xy : vec2f,
+  click_t : vec2f,
 };
 @group(0) @binding(0) var<uniform> u : Uniforms;
 
@@ -216,6 +218,14 @@ fn screenUv(p : vec3f, rd : vec3f) -> vec2f {
   var col = mix(seen, room, fres * select(0.55, 1.0, mode < 0.5));
   let edgeTint = mix(vec3f(0.36, 0.47, 1.0), vec3f(0.55, 0.7, 1.0), dark);
   col += edgeTint * edge * (select(0.30, 0.18, mode < 0.5) + burst * 0.45);
+  // 点击涟漪：从点击位置扩散的荧光环，约 1.2s 消散（只画在整页背景上）
+  let clickAge = time - u.click_t.x;
+  if (mode < 0.5 && clickAge > 0.0 && clickAge < 1.4) {
+    let d = distance(frag, u.click_xy);
+    let ring = exp(-pow((d - clickAge * 640.0) / 52.0, 2.0)) * exp(-clickAge * 2.4);
+    let ringCol = mix(vec3f(0.145, 0.278, 0.894), vec3f(0.886, 1.0, 0.329), 0.3);
+    col += ringCol * ring * mix(0.3, 0.55, dark);
+  }
   return vec4f(col, 1.0);
 }
 `;
@@ -236,6 +246,8 @@ uniform vec2 uMouse;
 uniform float uMode;
 uniform float uCeleb;
 uniform float uBurst;
+uniform vec2 uClickPos;
+uniform float uClickTime;
 out vec4 outColor;
 
 const float FOCAL = 2.6;
@@ -416,6 +428,13 @@ void main() {
     backdrop(uvs[2] * uRes, dark, mode, time).b);
   vec3 col = mix(seen, room, fres * (mode < 0.5 ? 1.0 : 0.55));
   col += mix(vec3(0.36, 0.47, 1.0), vec3(0.55, 0.7, 1.0), dark) * edge * ((mode < 0.5 ? 0.18 : 0.30) + uBurst * 0.45);
+  // 点击涟漪：从点击位置扩散的荧光环（只画在整页背景上）
+  float clickAge = uTime - uClickTime;
+  if (mode < 0.5 && clickAge > 0.0 && clickAge < 1.4) {
+    float d = distance(frag, uClickPos);
+    float ring = exp(-pow((d - clickAge * 640.0) / 52.0, 2.0)) * exp(-clickAge * 2.4);
+    col += mix(vec3(0.145, 0.278, 0.894), vec3(0.886, 1.0, 0.329), 0.3) * ring * mix(0.3, 0.55, uDark);
+  }
   outColor = vec4(col, 1.0);
 }
 `;
@@ -459,7 +478,7 @@ function makeRenderer(backend, canvas) {
         confH = canvas.height;
       }
     };
-    const uniformBuffer = device.createBuffer({ size: 48, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    const uniformBuffer = device.createBuffer({ size: 56, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     const bindGroup = device.createBindGroup({
       layout: pipeline.getBindGroupLayout(0),
       entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
@@ -520,6 +539,8 @@ function makeRenderer(backend, canvas) {
     mode: gl.getUniformLocation(program, 'uMode'),
     celeb: gl.getUniformLocation(program, 'uCeleb'),
     burst: gl.getUniformLocation(program, 'uBurst'),
+    clickPos: gl.getUniformLocation(program, 'uClickPos'),
+    clickTime: gl.getUniformLocation(program, 'uClickTime'),
   };
   return {
     resize(w, h) { canvas.width = w; canvas.height = h; gl.viewport(0, 0, w, h); },
@@ -531,6 +552,8 @@ function makeRenderer(backend, canvas) {
       gl.uniform1f(loc.mode, u[6]);
       gl.uniform1f(loc.celeb, u[7]);
       gl.uniform1f(loc.burst, u[8]);
+      gl.uniform2f(loc.clickPos, u[10], u[11]);
+      gl.uniform1f(loc.clickTime, u[12]);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     },
   };
@@ -574,11 +597,15 @@ async function initGlassBackground() {
 
   const darkQuery = matchMedia('(prefers-color-scheme: dark)');
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
-  const uniforms = new Float32Array(12);
+  const uniforms = new Float32Array(14);
   let mouseX = 0.5;
   let mouseY = 0.5;
   let targetX = 0.5;
   let targetY = 0.5;
+  // 点击涟漪的位置（画布像素坐标）与发生时刻（draw 的秒数时间轴）
+  let clickX = -9999;
+  let clickY = -9999;
+  let clickTime = -9999;
   // 通关庆祝：胜利弹窗开着时趋近 1，玻璃珠聚成一颗大球；关掉再散开
   let celeb = 0;
   let celebTarget = 0;
@@ -607,10 +634,13 @@ async function initGlassBackground() {
     targetY = e.clientY / innerHeight;
   }, { passive: true });
 
-  // 点击页面时背景玻璃珠泛起一小圈色散涟漪，让背景和操作产生对话感
+  // 点击页面时：背景泛起一圈从指尖扩散的水波光环，玻璃珠同时轻轻一闪
   addEventListener('pointerdown', (e) => {
     if (e.button !== 0 || motionQuery.matches) return;
     burst = Math.max(burst, 0.5);
+    clickX = e.clientX * scale;
+    clickY = e.clientY * scale;
+    clickTime = (performance.now() - t0) / 1000 + 20;
   }, { passive: true });
 
   function resize() {
@@ -637,6 +667,10 @@ async function initGlassBackground() {
       uniforms[6] = scene.mode;
       uniforms[7] = celeb;
       uniforms[8] = burst;
+      // 9 是 burst_pad 的占位；点击参数在 WGSL 里对齐到 10/11/12
+      uniforms[10] = clickX;
+      uniforms[11] = clickY;
+      uniforms[12] = clickTime;
       scene.renderer.render(uniforms);
     }
   }

@@ -191,14 +191,14 @@ try {
 } catch (_) {}
 mountGame(initialGame);
 
-// 首屏：顶栏与棋盘卡片依次浮入，第一印象更精致
+// 首屏：顶栏与棋盘卡片依次浮入，第一印象更精致（用 scale 而非位移，避免瞬时撑出页面滚动条）
 animate(document.querySelector(".topbar"), [
-  { opacity: 0, translate: '0 -10px' },
-  { opacity: 1, translate: '0 0' }
+  { opacity: 0, scale: .985 },
+  { opacity: 1, scale: 1 }
 ], { duration: 380, fill: 'backwards' });
 animate(document.querySelector(".board-card"), [
-  { opacity: 0, translate: '0 18px' },
-  { opacity: 1, translate: '0 0' }
+  { opacity: 0, scale: .985 },
+  { opacity: 1, scale: 1 }
 ], { duration: 420, delay: 110, fill: 'backwards' });
 
 // Firebase 异步连接；失败时游戏照常可玩，仅登录与排行榜停用。

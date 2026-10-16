@@ -1,4 +1,4 @@
-import { pop, enterBoard, motionEnabled } from '../core/motion.js';
+import { pop, enterBoard, animate, motionEnabled } from '../core/motion.js';
 // 数织 Nonogram：根据行列数字线索填出隐藏图案。
 // 题目由种子确定性生成，并验证只有一个正确解。
 
@@ -366,15 +366,26 @@ function lineMatchesClues(playerLine, expectedClues) {
     && currentClues.every((value, index) => value === expectedClues[index]);
 }
 
-// 一行／一列刚被解出时，光点沿该行（列）依次弹跳扫过
+// 荧光扫光的共用关键帧：一圈荧光描边流过格子，不缩放、不位移，干净利落
+function glowSweepFrames() {
+  return [
+    { boxShadow: "inset 0 0 0 2px rgba(226,255,84,0), inset 0 0 0 0 rgba(226,255,84,0)" },
+    { boxShadow: "inset 0 0 0 2px rgba(226,255,84,.95), inset 0 0 14px rgba(226,255,84,.5)", offset: 0.35 },
+    { boxShadow: "inset 0 0 0 0 rgba(226,255,84,0), inset 0 0 0 0 rgba(226,255,84,0)" }
+  ];
+}
+
+// 一行／一列刚被解出时，荧光描边沿该行（列）流过，线索数字最后弹一下收尾
 function sweepLine(axis, index) {
   if (!motionEnabled()) return;
-  const step = state.size <= 5 ? 34 : state.size === 10 ? 24 : 16;
+  const step = state.size <= 5 ? 36 : state.size === 10 ? 26 : 18;
   for (let i = 0; i < state.size; i += 1) {
     const row = axis === "row" ? index : i;
     const col = axis === "row" ? i : index;
-    pop(els.grid.querySelector(`[data-row="${row}"][data-col="${col}"]`), i * step);
+    animate(els.grid.querySelector(`[data-row="${row}"][data-col="${col}"]`), glowSweepFrames(), { duration: 320, delay: i * step });
   }
+  const clue = els.grid.querySelector(axis === "row" ? `[data-row-clue="${index}"]` : `[data-col-clue="${index}"]`);
+  pop(clue, state.size * step + 80);
 }
 
 function updateClueCompletion(silent = false) {
@@ -565,12 +576,13 @@ function highlightAt(cell) {
   els.grid.querySelector(`[data-col-clue="${col}"]`)?.classList.add("ch-active");
 }
 
-// 通关时格子从左上角开始波浪式弹跳；胜利弹窗关掉后再回放一次
+// 通关时荧光沿对角线波浪式流过整张棋盘；胜利弹窗关掉后再回放一次
 function playBoardWave() {
   if (!motionEnabled()) return;
-  const step = state.size <= 5 ? 42 : state.size === 10 ? 26 : 18;
+  const step = state.size <= 5 ? 46 : state.size === 10 ? 30 : 20;
   els.grid.querySelectorAll(".cell").forEach((cell) => {
-    pop(cell, (Number(cell.dataset.row) + Number(cell.dataset.col)) * step);
+    const delay = (Number(cell.dataset.row) + Number(cell.dataset.col)) * step;
+    animate(cell, glowSweepFrames(), { duration: 360, delay });
   });
 }
 
