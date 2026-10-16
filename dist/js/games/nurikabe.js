@@ -13,18 +13,87 @@ const STATE_LABELS = ['未定', '海', '岛'];
 
 let ctx, controller, n = PRESETS[0], puzzle, state, seed, won;
 
+// 规则体检：海的连通分量（最大的一片是「主海」）、2×2 海块、每片岛的大小与数字
+function analyze() {
+  const clueByCell = new Map(puzzle.clues.map((clue) => [clue.cell, clue.size]));
+  const neighbors = (i) => {
+    const r = Math.floor(i / n), c = i % n;
+    return [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]]
+      .filter(([nr, nc]) => nr >= 0 && nr < n && nc >= 0 && nc < n)
+      .map(([nr, nc]) => nr * n + nc);
+  };
+  const componentsOf = (target) => {
+    const comp = new Map();
+    let count = 0;
+    state.forEach((value, i) => {
+      if (value !== target || comp.has(i)) return;
+      const id = count++;
+      const queue = [i];
+      comp.set(i, id);
+      while (queue.length) {
+        neighbors(queue.pop()).forEach((next) => {
+          if (state[next] === target && !comp.has(next)) { comp.set(next, id); queue.push(next); }
+        });
+      }
+    });
+    return { comp, count };
+  };
+
+  // 海：最大连通片为主海，其余是游离的碎海
+  const sea = componentsOf(1);
+  const sizes = new Map();
+  sea.comp.forEach((id) => sizes.set(id, (sizes.get(id) || 0) + 1));
+  let mainSea = -1, mainSize = 0;
+  sizes.forEach((size, id) => { if (size > mainSize) { mainSize = size; mainSea = id; } });
+  const straySea = new Set();
+  sea.comp.forEach((id, i) => { if (id !== mainSea) straySea.add(i); });
+
+  // 2×2 全是海即违规，四格都圈出来
+  const blocked = new Set();
+  for (let r = 0; r < n - 1; r += 1) {
+    for (let c = 0; c < n - 1; c += 1) {
+      const cells = [r * n + c, r * n + c + 1, (r + 1) * n + c, (r + 1) * n + c + 1];
+      if (cells.every((i) => state[i] === 1)) cells.forEach((i) => blocked.add(i));
+    }
+  }
+
+  // 岛：恰含一个数字且大小相等 → 完成；数字超出一个或大小超标 → 超限
+  const island = componentsOf(2);
+  const islandState = new Map();
+  const visited = new Map();
+  island.comp.forEach((id, i) => {
+    if (islandState.has(i)) return;
+    if (visited.has(id)) { islandState.set(i, visited.get(id)); return; }
+    const cells = [];
+    island.comp.forEach((cid, ci) => { if (cid === id) cells.push(ci); });
+    const clues = cells.filter((cell) => clueByCell.has(cell));
+    const status = clues.length === 1 && cells.length === clueByCell.get(clues[0]) ? 'complete'
+      : clues.length > 1 || (clues.length === 1 && cells.length > clueByCell.get(clues[0])) ? 'overfull' : '';
+    visited.set(id, status);
+    islandState.set(i, status);
+  });
+
+  return { straySea, blocked, islandState };
+}
+
 function render(popCell = -1) {
   const board = ctx.els.gameRoot.querySelector('.nurikabe-grid');
   board.style.setProperty('--n', n);
   const clueByCell = new Map(puzzle.clues.map((clue) => [clue.cell, clue.size]));
+  const { straySea, blocked, islandState } = analyze();
   board.innerHTML = state.map((value, i) => {
     const r = Math.floor(i / n), c = i % n;
     const clue = clueByCell.get(i);
     const classes = ['nurikabe-cell', value === 1 ? 'sea' : value === 2 ? 'island' : ''];
     if (clue != null) classes.push('clue');
+    if (straySea.has(i)) classes.push('stray');
+    if (blocked.has(i)) classes.push('blocked');
+    const islandStatus = islandState.get(i);
+    if (islandStatus) classes.push(islandStatus);
+    const warnings = [straySea.has(i) ? '海未连通' : '', blocked.has(i) ? '形成 2×2 海块' : '', islandStatus === 'complete' ? '岛屿已完成' : '', islandStatus === 'overfull' ? '岛屿超限' : ''].filter(Boolean).join('，');
     const label = clue != null ? `数字 ${clue}，岛` : STATE_LABELS[value];
     const content = clue != null ? clue : value === 2 ? '·' : '';
-    return `<button type="button" class="${classes.join(' ')}" data-cell="${i}" aria-label="第 ${r + 1} 行第 ${c + 1} 列，${label}，点击切换">${content}</button>`;
+    return `<button type="button" class="${classes.join(' ')}" data-cell="${i}" aria-label="第 ${r + 1} 行第 ${c + 1} 列，${label}${warnings ? `，${warnings}` : ''}，点击切换">${content}</button>`;
   }).join('');
   if (popCell >= 0 && board.children[popCell]) pop(board.children[popCell]);
   ctx.els.controlPanel.querySelector('#nurikabeDecided').textContent = `${state.filter((v) => v !== 0).length} / ${n * n}`;

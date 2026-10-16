@@ -444,3 +444,30 @@ button.akari-cell:focus-visible { outline: 2px solid var(--blue); outline-offset
 [data-theme="dark"] .kenken-cell.cage-left { border-left-color: #e7ebf7; }
 [data-theme="dark"] .kenken-cell:hover { background: #2b3763; }
 [data-theme="dark"] .kenken-cell.selected { background: #31406f; }
+
+/* ============================== 确认感：实时对错反馈 ============================== */
+/* 数独 / 聪明格：同行、同列（数独含宫）出现重复数字即时标红 */
+.sudoku-cell.dup { color: var(--danger); background: #fdecec; }
+.sudoku-cell.given.dup { background: #f5e0e0; }
+.kenken-cell.dup { background: #fdecec; }
+.kenken-cell.dup .kenken-value { color: var(--danger); }
+/* 聪明格：笼算式填满且命中目标，整笼变绿 */
+.kenken-cell.cage-ok:not(.selected) { background: #eef9f1; }
+.kenken-cell.cage-ok .cage-label { color: var(--success); }
+/* 数墙：游离碎海发灰、2×2 海块圈红、岛屿完成勾绿 / 超限圈红 */
+.nurikabe-cell.sea.stray { background: #93a5d8; }
+.nurikabe-cell.sea.blocked { box-shadow: inset 0 0 0 2.5px var(--danger); }
+.nurikabe-cell.island.complete, .nurikabe-cell.clue.complete { box-shadow: inset 0 0 0 2px var(--success); }
+.nurikabe-cell.island.overfull, .nurikabe-cell.clue.overfull { box-shadow: inset 0 0 0 2px var(--danger); }
+/* 数回：分叉点（度数 > 2）标红 */
+.loop-dot.warn { fill: var(--danger); }
+/* 数桥：已连入主网的岛，蓝描边 + 光晕 */
+.bridge-island.linked { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37, 71, 228, 0.18); }
+
+[data-theme="dark"] .sudoku-cell.dup { background: #3d2027; }
+[data-theme="dark"] .sudoku-cell.given.dup { background: #352029; }
+[data-theme="dark"] .kenken-cell.dup { background: #3d2027; }
+[data-theme="dark"] .kenken-cell.cage-ok:not(.selected) { background: rgba(79, 209, 152, 0.12); }
+[data-theme="dark"] .kenken-cell.cage-ok .cage-label { color: #4fd198; }
+[data-theme="dark"] .nurikabe-cell.sea.stray { background: #3d4c92; }
+[data-theme="dark"] .bridge-island.linked { border-color: #8ea6ff; box-shadow: 0 0 0 3px rgba(93, 125, 255, 0.25); }

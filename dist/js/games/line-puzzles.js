@@ -19,7 +19,7 @@ function createLineGame(kind) {
           const count = puzzle.edges.reduce((sum, e, k) => sum + (e.cells.includes(i) && values[k] === 1 ? 1 : 0), 0);
           buttons += `<span data-clue="${i}" class="loop-clue ${count === v ? 'satisfied' : count > v ? 'overfull' : ''}" style="${position(i % n + .5, Math.floor(i / n) + .5)}">${v}</span>`;
         });
-        for (let y = 0; y <= n; y++) for (let x = 0; x <= n; x++) drawing += `<circle cx="${x + .5}" cy="${y + .5}" r=".045" class="loop-dot"/>`;
+        for (let y = 0; y <= n; y++) for (let x = 0; x <= n; x++) drawing += `<circle cx="${x + .5}" cy="${y + .5}" r=".045" class="loop-dot" data-dot="${y * (n + 1) + x}"/>`;
         puzzle.edges.forEach((e, i) => {
           const ax = e.a % (n + 1) + .5, ay = Math.floor(e.a / (n + 1)) + .5, bx = e.b % (n + 1) + .5, by = Math.floor(e.b / (n + 1)) + .5;
           drawing += `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" class="guide-line"/><line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" pathLength="1" data-stroke="${i}-0" class="drawn-line animated-stroke"/>`;
@@ -45,6 +45,19 @@ function createLineGame(kind) {
     }
     // Keep the SVG and hit targets alive so transitions can run in either direction.
     const counts = loop ? puzzle.clues.map((_, cell) => puzzle.edges.reduce((sum, edge, i) => sum + (edge.cells.includes(cell) && values[i] === 1 ? 1 : 0), 0)) : bridgeCounts(puzzle, values);
+    // 数桥：并查集求连通分量，与 1 号岛相连的一片标蓝，看得到网络在长大
+    let linkedRoots = null;
+    if (!loop) {
+      const parent = puzzle.islands.map((_, i) => i);
+      const find = (x) => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
+      puzzle.edges.forEach((edge, i) => {
+        if (values[i] > 0) { const ra = find(edge.a), rb = find(edge.b); if (ra !== rb) parent[ra] = rb; }
+      });
+      const mainRoot = find(0);
+      linkedRoots = puzzle.islands.map((_, i) => find(i) === mainRoot);
+      const counter = ctx.els.controlPanel.querySelector('#hashiLinked');
+      if (counter) counter.textContent = `${linkedRoots.filter(Boolean).length} / ${puzzle.islands.length}`;
+    }
     counts.forEach((count, i) => {
       const label = board.querySelector(loop ? `[data-clue="${i}"]` : `[data-island="${i}"]`);
       const clue = loop ? puzzle.clues[i] : puzzle.islands[i].clue;
@@ -52,7 +65,10 @@ function createLineGame(kind) {
       label.classList.toggle('satisfied', count === clue);
       label.classList.toggle('overfull', count > clue);
       if (!reset && !wasSatisfied && count === clue) pop(label);
-      if (!loop) label.setAttribute('aria-label', `岛 ${i+1}，需要 ${clue} 座桥，已有 ${count} 座`);
+      if (!loop) {
+        label.classList.toggle('linked', linkedRoots[i]);
+        label.setAttribute('aria-label', `岛 ${i+1}，需要 ${clue} 座桥，已有 ${count} 座${linkedRoots[i] ? '，已连入主网' : ''}`);
+      }
     });
     puzzle.edges.forEach((edge, i) => {
       const button = board.querySelector(`[data-edge="${i}"]`);
@@ -71,6 +87,14 @@ function createLineGame(kind) {
         board.querySelector(`[data-stroke="${i}-1"]`).classList.toggle('is-drawn', value === 2);
       }
     });
+    // 数回：度数超过 2 的圆点（分叉）标红警告，闭环规则不用等到检查才发现
+    if (loop) {
+      const degree = new Array((n + 1) * (n + 1)).fill(0);
+      puzzle.edges.forEach((edge, i) => { if (values[i] === 1) { degree[edge.a] += 1; degree[edge.b] += 1; } });
+      board.querySelectorAll('.loop-dot').forEach((dot) => {
+        dot.classList.toggle('warn', degree[Number(dot.dataset.dot)] > 2);
+      });
+    }
     ctx.els.boardToolbar.querySelector('[data-action="undo"]').disabled = !history.length || won;
   }
   function edit(i, exclude = false) {
@@ -110,7 +134,7 @@ function createLineGame(kind) {
     newGame,
     mount(context) {
       ctx = context; controller = new AbortController(); const options = {signal:controller.signal}; markMode = false;
-      ctx.els.controlPanel.innerHTML = `<div class="eyebrow"><span></span> LOGIC PUZZLE</div><h1>${loop?'循着线索，<br><em>画出一个环。':'一桥一线，<br><em>连接每座岛。'}</em></h1><div class="field-group"><div class="field-label"><span>棋盘规格</span></div><div class="segmented" role="radiogroup" aria-label="棋盘规格">${presets.map(v=>`<button type="button" role="radio" aria-checked="${n===v}" data-size="${v}">${v} × ${v}</button>`).join('')}</div></div><button type="button" class="primary-button" data-action="new">↻ 生成新题目</button><div class="mini-guide"><span class="guide-icon">✦</span><p><strong>${loop?'数字决定四周的线条。':'数字决定岛屿的桥数。'}</strong><br>${loop?'不分叉、不交叉，只画一个闭环。':'每对岛屿最多两座桥，所有岛相连。'}</p></div>`;
+      ctx.els.controlPanel.innerHTML = `<div class="eyebrow"><span></span> LOGIC PUZZLE</div><h1>${loop?'循着线索，<br><em>画出一个环。':'一桥一线，<br><em>连接每座岛。'}</em></h1><div class="field-group"><div class="field-label"><span>棋盘规格</span></div><div class="segmented" role="radiogroup" aria-label="棋盘规格">${presets.map(v=>`<button type="button" role="radio" aria-checked="${n===v}" data-size="${v}">${v} × ${v}</button>`).join('')}</div></div>${loop?'':'<div class="tile-score"><span>已连通岛屿</span><strong id="hashiLinked" aria-live="polite">—</strong></div>'}<button type="button" class="primary-button" data-action="new">↻ 生成新题目</button><div class="mini-guide"><span class="guide-icon">✦</span><p><strong>${loop?'数字决定四周的线条。':'数字决定岛屿的桥数。'}</strong><br>${loop?'不分叉、不交叉，只画一个闭环。':'蓝色描边是已连入主网的岛，全部连通即胜利。'}</p></div>`;
       ctx.els.gameRoot.innerHTML = `<div class="line-board ${loop?'loop-board':'bridge-board'}" role="group" aria-label="${name}棋盘"></div>`;
       ctx.els.boardToolbar.innerHTML = `${loop?'<div class="tool-switch" aria-label="画线方式"><button type="button" data-mode="line" aria-pressed="true">画线</button><button type="button" data-mode="exclude" aria-pressed="false">× 排除</button></div>':''}<div class="board-actions"><button type="button" class="text-button" data-action="undo">↶ 撤销</button><button type="button" class="text-button" data-action="clear">清空</button><button type="button" class="secondary-button" data-action="check">检查答案</button></div>`;
       ctx.els.desktopTip.textContent = loop?'点击边画线 · 右键 / 排除模式标记 × · Tab 和空格也可操作':'点击岛屿之间的虚线：单桥 → 双桥 → 无桥 · Tab 和空格也可操作';

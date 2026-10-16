@@ -181,6 +181,21 @@ function renderGrid() {
 function renderPlayerState() {
   const selectedValue = state.selected ? state.player[state.selected[0]][state.selected[1]] : 0;
 
+  // 实时查重：同行 / 同列 / 同宫里相同的数字立即标红，不用等提交才发现
+  const dup = new Set();
+  const groups = new Map();
+  for (let r = 0; r < GRID_SIZE; r += 1) {
+    for (let c = 0; c < GRID_SIZE; c += 1) {
+      const value = state.player[r][c];
+      if (!value) continue;
+      [`r${r}v${value}`, `c${c}v${value}`, `b${Math.floor(r / 3)}${Math.floor(c / 3)}v${value}`].forEach((key) => {
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(r * GRID_SIZE + c);
+      });
+    }
+  }
+  groups.forEach((cells) => { if (cells.length > 1) cells.forEach((i) => dup.add(i)); });
+
   els.grid.querySelectorAll(".sudoku-cell").forEach((cell) => {
     const row = Number(cell.dataset.row);
     const col = Number(cell.dataset.col);
@@ -191,17 +206,19 @@ function renderPlayerState() {
     const related = state.selected
       && (state.selected[0] === row || state.selected[1] === col
         || (Math.floor(state.selected[0] / 3) === Math.floor(row / 3) && Math.floor(state.selected[1] / 3) === Math.floor(col / 3)));
+    const isDup = dup.has(row * GRID_SIZE + col);
 
     cell.classList.toggle("given", given);
     cell.classList.toggle("selected", Boolean(isSelected));
     cell.classList.toggle("related", Boolean(related) && !isSelected);
     cell.classList.toggle("same-value", Boolean(sameValue) && !isSelected);
+    cell.classList.toggle("dup", isDup);
     const text = value === 0 ? "" : String(value);
     if (cell.textContent !== text) {
       cell.textContent = text;
       if (!given) pop(cell);
     }
-    cell.setAttribute("aria-label", `第 ${row + 1} 行，第 ${col + 1} 列，${value === 0 ? "空白" : `数字 ${value}${given ? "，题目给出" : ""}`}`);
+    cell.setAttribute("aria-label", `第 ${row + 1} 行，第 ${col + 1} 列，${value === 0 ? "空白" : `数字 ${value}${given ? "，题目给出" : ""}${isDup ? "，与同行/列/宫重复" : ""}`}`);
   });
 
   els.undoButton.disabled = state.history.length === 0;

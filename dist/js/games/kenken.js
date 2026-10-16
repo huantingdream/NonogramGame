@@ -18,6 +18,34 @@ function render(popCell = -1) {
   const cageOf = Array(n * n);
   puzzle.cages.forEach((cage, id) => cage.cells.forEach((cell) => { cageOf[cell] = id; }));
   const labelCell = new Map(puzzle.cages.map((cage) => [Math.min(...cage.cells), cage]));
+
+  // 实时查重：同行 / 同列出现相同数字立即标红
+  const dup = new Set();
+  const seen = new Map();
+  grid.forEach((value, i) => {
+    if (!value) return;
+    const r = Math.floor(i / n), c = i % n;
+    [`r${r}v${value}`, `c${c}v${value}`].forEach((key) => {
+      if (!seen.has(key)) seen.set(key, []);
+      seen.get(key).push(i);
+    });
+  });
+  seen.forEach((cells) => { if (cells.length > 1) cells.forEach((i) => dup.add(i)); });
+
+  // 笼算式：填满且运算结果命中目标，整笼变绿
+  const cageOk = puzzle.cages.map((cage) => {
+    const values = cage.cells.map((cell) => grid[cell]);
+    if (values.some((v) => !v)) return false;
+    switch (cage.op) {
+      case 'eq': return values[0] === cage.target;
+      case 'add': return values.reduce((a, b) => a + b, 0) === cage.target;
+      case 'mul': return values.reduce((a, b) => a * b, 1) === cage.target;
+      case 'sub': return values.length === 2 && Math.abs(values[0] - values[1]) === cage.target;
+      case 'div': { const [a, b] = values; return values.length === 2 && Math.max(a, b) / Math.min(a, b) === cage.target; }
+      default: return false;
+    }
+  });
+
   board.innerHTML = grid.map((value, i) => {
     const r = Math.floor(i / n), c = i % n;
     const borders = [
@@ -28,8 +56,8 @@ function render(popCell = -1) {
     ].filter(Boolean).join(' ');
     const cage = labelCell.get(i);
     const label = cage ? `<span class="cage-label">${cage.target}${OP_SYMBOLS[cage.op]}</span>` : '';
-    const classes = ['kenken-cell', borders, i === selected ? 'selected' : ''].filter(Boolean).join(' ');
-    return `<button type="button" class="${classes}" data-cell="${i}" aria-label="第 ${r + 1} 行第 ${c + 1} 列，${value ? `已填 ${value}` : '空格'}${cage ? `，笼子算式 ${cage.target}${OP_SYMBOLS[cage.op]}` : ''}">${label}<span class="kenken-value">${value || ''}</span></button>`;
+    const classes = ['kenken-cell', borders, i === selected ? 'selected' : '', dup.has(i) ? 'dup' : '', cageOk[cageOf[i]] ? 'cage-ok' : ''].filter(Boolean).join(' ');
+    return `<button type="button" class="${classes}" data-cell="${i}" aria-label="第 ${r + 1} 行第 ${c + 1} 列，${value ? `已填 ${value}` : '空格'}${dup.has(i) ? '，与同行/列重复' : ''}${cage ? `，笼子算式 ${cage.target}${OP_SYMBOLS[cage.op]}${cageOk[cageOf[i]] ? '，已满足' : ''}` : ''}">${label}<span class="kenken-value">${value || ''}</span></button>`;
   }).join('');
   if (popCell >= 0 && board.children[popCell]) pop(board.children[popCell]);
   ctx.els.controlPanel.querySelector('#kenkenFilled').textContent = `${grid.filter(Boolean).length} / ${n * n}`;
