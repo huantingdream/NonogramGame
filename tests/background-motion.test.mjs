@@ -54,3 +54,19 @@ test('manual preference persists and overrides the reaction default', async () =
   assert.equal(env.values.get('gejian:background-motion'), 'off');
   assert.equal(document.documentElement.dataset.backgroundMotion, 'off');
 });
+
+test('measurement temporarily pauses motion without overwriting saved preferences', async () => {
+  const env = environment('on');
+  const motion = await loadModule('pause');
+  motion.initBackgroundMotion(); motion.setBackgroundMotionContext('reaction');
+  motion.pauseBackgroundMotion(true);
+  assert.equal(document.documentElement.dataset.backgroundMotion, 'off');
+  assert.equal(env.button.disabled, true);
+  env.listeners.click();
+  assert.equal(env.values.get('gejian:background-motion'), 'on');
+  motion.pauseBackgroundMotion(false);
+  assert.equal(document.documentElement.dataset.backgroundMotion, 'on');
+  assert.equal(env.button.disabled, false);
+  motion.setBackgroundMotionContext('aim');
+  assert.equal(document.documentElement.dataset.backgroundMotion, 'on');
+});

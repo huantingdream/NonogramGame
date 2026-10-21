@@ -3,6 +3,7 @@
 const STORAGE_KEY = 'gejian:background-motion';
 let currentGameId = null;
 let button = null;
+let paused = false;
 
 function readSaved() {
   try {
@@ -20,12 +21,19 @@ function motionEnabled() {
 }
 
 function apply() {
-  const enabled = motionEnabled();
+  const enabled = !paused && motionEnabled();
   document.documentElement.dataset.backgroundMotion = enabled ? 'on' : 'off';
   if (!button) return;
   button.setAttribute('aria-pressed', String(enabled));
-  button.setAttribute('aria-label', enabled ? '关闭背景动效' : '开启背景动效');
-  button.title = enabled ? '关闭背景动效' : '开启背景动效';
+  button.disabled = paused;
+  button.title = paused ? '测试进行中，背景动效暂时暂停' : enabled ? '关闭背景动效' : '开启背景动效';
+  button.setAttribute('aria-label', button.title);
+}
+
+// Temporarily suspend rendering without overwriting the user's saved preference.
+export function pauseBackgroundMotion(value) {
+  paused = value;
+  apply();
 }
 
 export function setBackgroundMotionContext(gameId) {
@@ -37,6 +45,7 @@ export function initBackgroundMotion() {
   button = document.querySelector('#backgroundMotionButton');
   if (!button) return;
   button.addEventListener('click', () => {
+    if (paused) return;
     const next = motionEnabled() ? 'off' : 'on';
     try { localStorage.setItem(STORAGE_KEY, next); } catch (_) {}
     apply();

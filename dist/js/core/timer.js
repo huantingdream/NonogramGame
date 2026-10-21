@@ -16,10 +16,11 @@ export function createTimer(onTick) {
   }
 
   return {
-    start() {
+    start({ silent = false } = {}) {
       if (startedAt !== null) return;
       startedAt = Date.now() - elapsed * 1000;
-      intervalId = window.setInterval(tick, 1000);
+      // Precision tasks still track total time, without repainting a ticking UI.
+      if (!silent) intervalId = window.setInterval(tick, 1000);
     },
     stop() {
       window.clearInterval(intervalId);

@@ -1,5 +1,7 @@
 import { randomSeed } from '../core/utils.js';
 import { pop, enterBoard, animate, cancelMotion } from '../core/motion.js';
+import { inputTime } from '../core/input-time.js';
+import { pauseBackgroundMotion } from '../core/background-motion.js?v=20261021-2';
 
 const stats = values => Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 function readBest(key) {
@@ -16,92 +18,126 @@ function watchInterruption(interrupt, signal) {
 function press(element, action, signal) {
   element.addEventListener('pointerdown', event => {
     if (!event.isPrimary || event.button !== 0) return;
-    event.preventDefault(); element.focus({ preventScroll: true }); action();
+    const timestamp = inputTime(event);
+    event.preventDefault(); element.focus({ preventScroll: true }); action(timestamp);
   }, { signal });
   element.addEventListener('keydown', event => {
     if (![' ', 'Enter'].includes(event.key)) return;
-    event.preventDefault(); if (!event.repeat) action();
+    const timestamp = inputTime(event);
+    event.preventDefault(); if (!event.repeat) action(timestamp);
   }, { signal });
-  element.addEventListener('click', event => { if (event.detail === 0) action(); }, { signal });
+  element.addEventListener('click', event => { if (event.detail === 0) action(inputTime(event)); }, { signal });
 }
 
 export const reaction = (() => {
-  let ctx, controller, surface, phase, samples, readyAt, timeout, frame, best, seed;
+  let ctx, controller, surface, titleEl, descriptionEl, phase, samples, readyAt, timeout, frame, best, seed;
+  let cueChecked, pendingInput;
+  // A conservative stall guard, NOT a display-latency estimate or compensation.
+  const maxCueFrameMs = 50;
   const key = 'gejian:reaction:best-average-ms';
-  function cancelWait() { clearTimeout(timeout); cancelAnimationFrame(frame); }
-  function display(next, title, description) {
+  function cancelWait() {
+    clearTimeout(timeout); cancelAnimationFrame(frame);
+    cueChecked = false; pendingInput = null;
+  }
+  function displayCue(next, title, description) {
+    titleEl.textContent = title; descriptionEl.textContent = description;
     phase = next; surface.dataset.phase = next;
-    surface.querySelector('strong').textContent = title;
-    surface.querySelector('small').textContent = description;
+  }
+  function display(next, title, description) {
+    displayCue(next, title, description);
     ctx.els.controlPanel.querySelector('#reactionRounds').textContent = `${samples.length} / 5`;
     ctx.els.controlPanel.querySelector('#reactionAverage').textContent = samples.length ? `${stats(samples)} ms` : '—';
     ctx.els.controlPanel.querySelector('#reactionBest').textContent = best ? `${best} ms` : '—';
-    ctx.els.boardToolbar.querySelector('.reaction-history').innerHTML = samples.map((value, i) => `<span>第 ${i + 1} 次 <strong>${value} ms</strong></span>`).join('');
+    ctx.els.boardToolbar.querySelector('.reaction-history').innerHTML = samples.map((value, i) => `<span>第 ${i + 1} 次 <strong>${Math.round(value)} ms</strong></span>`).join('');
   }
-  function interrupt() {
+  function interrupt(reason = '窗口失焦或打开菜单不计成绩，点击重新等待') {
     if (!['waiting', 'ready'].includes(phase)) return;
-    cancelWait(); ctx.timer.stop(); ctx.setStatus('idle', '已中断');
-    display('interrupted', '这一轮已暂停', '窗口失焦或打开菜单不计成绩，点击重新等待');
+    cancelWait(); ctx.timer.stop(); pauseBackgroundMotion(false); ctx.setStatus('idle', '已中断');
+    display('interrupted', '本轮不计成绩', reason);
   }
-  function action() {
+  function falseStart() {
+    cancelWait(); ctx.timer.stop(); pauseBackgroundMotion(false); ctx.setStatus('incorrect', '抢跑了');
+    display('early', '太早了！', '等背景变绿、出现「现在点击」再动手。点击重试本轮');
+  }
+  function record(timestamp) {
+    const elapsed = timestamp - readyAt;
+    cancelWait(); samples.push(elapsed); ctx.timer.stop(); pauseBackgroundMotion(false);
+    if (samples.length === 5) {
+      const average = stats(samples), fastest = Math.round(Math.min(...samples));
+      if (!best || average < best) { best = average; saveBest(key, best); }
+      display('complete', `${average} ms`, `5 次平均 · 最快 ${fastest} ms · 点击开始新一组`);
+      ctx.reportWin({
+        summary: `5 次平均反应 ${average} ms，最快 ${fastest} ms。`,
+        score: { size: 305, difficulty: 'normal', averageMs: average, elapsedSeconds: Math.max(1, ctx.timer.elapsed()), puzzleId: seed % 10000, puzzleSeed: seed }
+      });
+    } else {
+      display('result', `${Math.round(elapsed)} ms`, `已完成 ${samples.length} / 5 次 · 点击继续下一轮`);
+      ctx.setStatus('active', '本轮完成');
+    }
+    pop(titleEl);
+  }
+  function action(timestamp) {
     if (document.hidden || document.querySelector('dialog[open]')) return;
     if (phase === 'complete') { newGame(); return; }
     if (phase === 'waiting') {
-      cancelWait(); ctx.timer.stop(); ctx.setStatus('incorrect', '抢跑了');
-      display('early', '太早了！', '等背景变绿、出现「现在点击」再动手。点击重试本轮');
-      return;
+      falseStart(); return;
     }
     if (phase === 'ready') {
-      const elapsed = Math.max(1, Math.round(performance.now() - readyAt));
-      samples.push(elapsed); ctx.timer.stop();
-      if (samples.length === 5) {
-        const average = stats(samples);
-        if (!best || average < best) { best = average; saveBest(key, best); }
-        display('complete', `${average} ms`, `5 次平均 · 最快 ${Math.min(...samples)} ms · 点击开始新一组`);
-        ctx.reportWin({
-          summary: `5 次平均反应 ${average} ms，最快 ${Math.min(...samples)} ms。`,
-          score: { size: 305, difficulty: 'normal', averageMs: average, elapsedSeconds: Math.max(1, ctx.timer.elapsed()), puzzleId: seed % 10000, puzzleSeed: seed }
-        });
-      } else {
-        display('result', `${elapsed} ms`, `已完成 ${samples.length} / 5 次 · 点击继续下一轮`);
-        ctx.setStatus('active', '本轮完成');
-      }
-      pop(surface.querySelector('strong')); return;
+      if (pendingInput !== null) return;
+      if (timestamp === null) { interrupt('浏览器未提供有效输入时间戳，点击重试本轮'); return; }
+      // An input made before the cue can arrive after it due to task queuing.
+      if (timestamp <= readyAt) { falseStart(); return; }
+      if (!cueChecked) { pendingInput = timestamp; return; }
+      record(timestamp); return;
     }
-    ctx.timer.start(); ctx.setStatus('active', '等待变色');
+    cancelWait(); cancelMotion(surface); pauseBackgroundMotion(true);
+    ctx.timer.start({ silent: true }); ctx.setStatus('active', '等待变色');
     display('waiting', '等待变绿…', '保持专注，先不要点击');
     timeout = setTimeout(() => {
       frame = requestAnimationFrame(() => {
         if (phase !== 'waiting' || document.hidden || document.querySelector('dialog[open]')) { interrupt(); return; }
-        // The cue changes immediately, with no color tween that could shift the perceived start.
-        display('ready', '现在点击！', '点击绿色区域，或按空格 / Enter');
+        // Only mutate the cue here: no stats/history, focus, sound or layout reads.
+        // rAF is BEFORE paint. This is a software onset estimate, not a photon timestamp.
+        displayCue('ready', '现在点击！', '点击绿色区域，或按空格 / Enter');
         readyAt = performance.now();
+        frame = requestAnimationFrame(() => {
+          if (phase !== 'ready') return;
+          if (document.hidden || document.querySelector('dialog[open]')) { interrupt(); return; }
+          // The second callback only checks for an unusually stalled cue frame.
+          // Never start the clock here or subtract a guessed frame duration.
+          if (performance.now() - readyAt > maxCueFrameMs) {
+            interrupt('变色附近检测到明显卡顿，本轮不计成绩，点击重试'); return;
+          }
+          cueChecked = true;
+          if (pendingInput !== null) record(pendingInput);
+        });
       });
     }, 1500 + Math.random() * 3000);
   }
   function newGame() {
     ctx.closeVictory(); seed = randomSeed();
-    cancelWait(); samples = []; ctx.timer.reset(); ctx.setTitle('5 轮反应测试'); ctx.setPuzzleNumber(seed % 10000);
+    cancelWait(); pauseBackgroundMotion(false); samples = []; ctx.timer.reset(); ctx.setTitle('5 轮反应测试'); ctx.setPuzzleNumber(seed % 10000);
     ctx.setStatus('idle', '准备开始'); display('idle', '你的反应有多快？', '点击开始，等背景由红变绿后立刻点击');
   }
   return {
     id: 'reaction', name: '反应测试', icon: 'ϟ', subtitle: 'REACTION TIME',
     sizes: [{ value: 305, label: '5 次平均' }], difficulties: [{ value: 'normal', label: '标准' }],
     howToTitle: '等变绿，再点击',
-    howTo: '<p>点击大区域开始一轮。红色表示等待，变成绿色并出现<strong>「现在点击」</strong>后，立刻点击或按空格 / Enter。</p><p>提前点击算抢跑，需要重试本轮；完成 5 次后显示平均与最快反应时间。打开菜单、切换标签页或窗口失焦会中断当前轮，不计入结果。</p><p>首次进入反应测试时背景动效默认暂停，减少视觉干扰；可用顶栏的背景动效按钮重新开启。最佳平均成绩保存在当前浏览器，完成后也可登录上传至反应排行榜。结果受显示器和输入设备延迟影响，适合休闲练习。</p>',
+    howTo: '<p>点击大区域开始一轮。红色表示等待，变成绿色并出现<strong>「现在点击」</strong>后，立刻点击或按空格 / Enter。按下即计时，不必等松开。</p><p>使用输入事件时间戳，避免把事件排队时间算入成绩；完成 5 次后显示平均与最快反应时间。抢跑、变色附近明显卡顿、打开菜单、切换标签页或窗口失焦的轮次不计成绩，需要重试。</p><p>测试期间暂停背景动效与跳秒更新，结束后恢复背景偏好。最佳平均成绩保存在当前浏览器，完成后也可登录上传至反应排行榜。起点是变色提交时刻的估计，网页无法直接测到屏幕实际发光时间；显示刷新、设备延迟和浏览器计时精度仍会影响结果，适合休闲练习，不是实验室测量。</p>',
     newGame,
     mount(context) {
       ctx = context; controller = new AbortController(); const { signal } = controller; best = readBest(key);
       ctx.els.controlPanel.innerHTML = '<div class="eyebrow"><span></span> QUICK REFLEX</div><h1>等一等，<br><em>就是现在。</em></h1><div class="training-stats"><div><span>完成轮数</span><strong id="reactionRounds"></strong></div><div><span>当前平均</span><strong id="reactionAverage"></strong></div><div><span>本机最佳平均</span><strong id="reactionBest"></strong></div></div><button class="primary-button" id="reactionReset">↻ 重新测试</button><div class="mini-guide"><span class="guide-icon">✦</span><p>等待随机变色，连续完成 5 次。<br>抢跑不计入成绩。</p></div>';
       ctx.els.gameRoot.innerHTML = '<button type="button" class="reaction-surface" aria-label="反应测试区域"><span aria-hidden="true" class="reaction-symbol">ϟ</span><strong></strong><small></small></button>';
       surface = ctx.els.gameRoot.querySelector('.reaction-surface');
+      titleEl = surface.querySelector('strong'); descriptionEl = surface.querySelector('small');
       ctx.els.boardToolbar.innerHTML = '<div class="reaction-history" aria-live="polite" aria-label="每轮反应成绩"></div>';
       ctx.els.desktopTip.textContent = '点击 / 空格 / Enter · 红色等待，绿色点击 · 完成 5 轮后可登录上传成绩';
       press(surface, action, signal);
       ctx.els.controlPanel.querySelector('#reactionReset').addEventListener('click', newGame, { signal });
-      watchInterruption(interrupt, signal); newGame(); enterBoard(surface);
+      watchInterruption(() => interrupt(), signal); newGame(); enterBoard(surface);
     },
-    unmount() { cancelWait(); controller.abort(); ctx.timer.stop(); ctx = null; }
+    unmount() { cancelWait(); controller.abort(); ctx.timer.stop(); pauseBackgroundMotion(false); ctx = null; }
   };
 })();
 

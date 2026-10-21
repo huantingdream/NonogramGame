@@ -1,6 +1,6 @@
 // 外壳主控：游戏切换、计时与状态显示、共享弹窗接线。
 
-import { createTimer } from "./core/timer.js";
+import { createTimer } from "./core/timer.js?v=20261021-2";
 import { formatElapsed, showToast } from "./core/utils.js";
 import { initFirebase } from "./core/firebase.js";
 import { initAccount } from "./core/account.js";
@@ -9,7 +9,7 @@ import { initLeaderboard } from "./core/leaderboard.js";
 import { animate, enterBoard, cancelMotion } from "./core/motion.js";
 import { initGamePicker } from "./core/game-picker.js";
 import { initTheme } from "./core/theme.js";
-import { initBackgroundMotion, setBackgroundMotionContext } from "./core/background-motion.js";
+import { initBackgroundMotion, setBackgroundMotionContext } from "./core/background-motion.js?v=20261021-2";
 import { initSound, playSound } from "./core/sound.js";
 import { initStats, recordPlay } from "./core/stats.js";
 import { initDaily, recordIfDaily } from "./core/daily.js";
@@ -25,7 +25,7 @@ import akari from "./games/akari.js";
 import nurikabe from "./games/nurikabe.js";
 import kenken from "./games/kenken.js";
 
-import { reaction, aim } from "./games/training.js";
+import { reaction, aim } from "./games/training.js?v=20261021-2";
 import watermelon from "./games/watermelon.js";
 
 const GAMES = [nonogram, sudoku, kenken, minesweeper, twenty48, slitherlink, hashi, nurikabe, akari, netwalk, watermelon, reaction, aim];
