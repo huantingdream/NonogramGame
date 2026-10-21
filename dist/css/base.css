@@ -118,6 +118,25 @@ input, select, textarea { font-size: 16px; } /* 防止 iOS 聚焦输入框时自
 .icon-moon { -webkit-mask-image: url("../assets/icons/btn-moon.svg"); mask-image: url("../assets/icons/btn-moon.svg"); }
 .icon-sun { -webkit-mask-image: url("../assets/icons/btn-sun.svg"); mask-image: url("../assets/icons/btn-sun.svg"); }
 .icon-help { -webkit-mask-image: url("../assets/icons/btn-help.svg"); mask-image: url("../assets/icons/btn-help.svg"); }
+.motion-toggle-icon {
+  position: relative;
+  width: 17px;
+  height: 17px;
+  border: 1.8px solid currentColor;
+  border-radius: 50%;
+}
+.motion-toggle-icon::before,
+.motion-toggle-icon::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+}
+.motion-toggle-icon::before { width: 4px; height: 4px; top: 2px; right: 1px; }
+.motion-toggle-icon::after { width: 3px; height: 3px; bottom: 2px; left: 2px; }
+#backgroundMotionButton[aria-pressed="false"] .motion-toggle-icon { border-style: dashed; opacity: .68; }
+#backgroundMotionButton[aria-pressed="false"] .motion-toggle-icon::before,
+#backgroundMotionButton[aria-pressed="false"] .motion-toggle-icon::after { display: none; }
 .game-picker-text { display: grid; gap: 2px; min-width: 0; text-align: left; }
 .current-game-name { font-size: 0.95rem; letter-spacing: 0.01em; }
 .game-picker-label { color: var(--muted); font-size: 0.72rem; }
@@ -424,10 +443,16 @@ h1 em { color: var(--lime); font-style: normal; }
     border-radius: 15px;
   }
   .topbar .brand { margin-right: auto; }
-  .topbar-actions { gap: 1px; margin-left: auto; }
+  .topbar-actions { order: 2; flex: 1 0 100%; justify-content: space-between; gap: 2px; margin-left: 0; }
   .game-picker-button { order: 3; flex-basis: 100%; min-height: 52px; }
-  .topbar-button, .how-to-button { min-height: 44px; padding: 8px 8px; font-size: 0.75rem; }
-  .how-to-button { gap: 5px; }
+  .topbar-actions .topbar-button, .topbar-actions .how-to-button {
+    flex: 0 0 36px;
+    justify-content: center;
+    gap: 0;
+    min-height: 40px;
+    padding: 7px;
+    font-size: 0;
+  }
   .how-to-button span { width: 20px; height: 20px; }
   .game-layout { gap: 12px; }
   .control-panel, .board-card { border-radius: 18px; }

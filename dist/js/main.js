@@ -9,6 +9,7 @@ import { initLeaderboard } from "./core/leaderboard.js";
 import { animate, enterBoard, cancelMotion } from "./core/motion.js";
 import { initGamePicker } from "./core/game-picker.js";
 import { initTheme } from "./core/theme.js";
+import { initBackgroundMotion, setBackgroundMotionContext } from "./core/background-motion.js";
 import { initSound, playSound } from "./core/sound.js";
 import { initStats, recordPlay } from "./core/stats.js";
 import { initDaily, recordIfDaily } from "./core/daily.js";
@@ -137,6 +138,7 @@ async function mountGame(gameId) {
 
   currentGame = game;
   currentGameId = game.id;
+  setBackgroundMotionContext(game.id);
 
   gamePicker.setActive(game);
   document.querySelector("#brandSubtitle").textContent = game.subtitle;
@@ -173,6 +175,7 @@ function initHowToModal() {
 gamePicker = initGamePicker({ games: GAMES, onSelect: mountGame });
 initHowToModal();
 initTheme();
+initBackgroundMotion();
 initSound();
 initAccount();
 initVictory({

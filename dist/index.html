@@ -20,8 +20,18 @@
       } catch (_) {
         document.documentElement.dataset.theme = "light";
       }
+      // 背景动效偏好也在首屏前应用，避免进入反应测试时先动一下再停住。
+      try {
+        var savedBackgroundMotion = localStorage.getItem("gejian:background-motion");
+        var initialGame = location.hash.slice(1);
+        document.documentElement.dataset.backgroundMotion = savedBackgroundMotion === "on" || savedBackgroundMotion === "off"
+          ? savedBackgroundMotion
+          : initialGame === "reaction" ? "off" : "on";
+      } catch (_) {
+        document.documentElement.dataset.backgroundMotion = location.hash === "#reaction" ? "off" : "on";
+      }
     </script>
-    <link rel="stylesheet" href="./css/base.css?v=20261016-3" />
+    <link rel="stylesheet" href="./css/base.css?v=20261021-1" />
     <link rel="stylesheet" href="./css/games.css?v=20261016-3" />
   </head>
   <body>
@@ -55,6 +65,9 @@
           </button>
           <button class="topbar-button account-button" id="accountButton" type="button">
             <span class="account-dot" aria-hidden="true"></span><span id="accountButtonLabel">登录</span>
+          </button>
+          <button class="topbar-button icon-only" id="backgroundMotionButton" type="button" aria-label="关闭背景动效" aria-pressed="true">
+            <span class="motion-toggle-icon" aria-hidden="true"></span>
           </button>
           <button class="topbar-button icon-only" id="soundButton" type="button" aria-label="关闭音效" aria-pressed="true">
             <span class="icon icon-sound" aria-hidden="true"></span>
@@ -217,7 +230,7 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./js/core/glass-bg.js?v=20261016-3"></script>
-    <script type="module" src="./js/main.js?v=20261016-3"></script>
+    <script type="module" src="./js/core/glass-bg.js?v=20261021-1"></script>
+    <script type="module" src="./js/main.js?v=20261021-1"></script>
   </body>
 </html>

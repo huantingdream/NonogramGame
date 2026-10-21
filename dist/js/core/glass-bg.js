@@ -5,7 +5,8 @@
 // 2) 左侧蓝色控制面板里也铺一块画布，画面板同款蓝色渐变和荧光黄圆环，
 //    几颗小玻璃珠在面板里慢慢游走——这是页面上始终可见的活物。
 // WebGPU 优先，WebGL2 兜底，都不支持就什么也不做（页面保持原样）。
-// 遵循 prefers-reduced-motion：减少动态时只渲染一帧静态画面。标签页隐藏时暂停。
+// 遵循 prefers-reduced-motion 和站内背景动效开关：关闭时只渲染一帧静态画面。
+// 标签页隐藏时暂停。
 
 const WGSL = /* wgsl */ `
 struct Uniforms {
@@ -591,12 +592,13 @@ async function initGlassBackground() {
       if (panelScene.canvas.parentNode === panelScene.host) return;
       panelScene.host.prepend(panelScene.canvas);
       resize();
-      if (motionQuery.matches) staticFrame();
+      if (!motionAllowed()) staticFrame();
     }).observe(panelScene.host, { childList: true });
   }
 
   const darkQuery = matchMedia('(prefers-color-scheme: dark)');
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+  const motionAllowed = () => !motionQuery.matches && document.documentElement.dataset.backgroundMotion !== 'off';
   const uniforms = new Float32Array(14);
   let mouseX = 0.5;
   let mouseY = 0.5;
@@ -622,7 +624,7 @@ async function initGlassBackground() {
       celebTarget = open ? 1 : 0;
       if (open) burst = 1;
       else burst = 0;
-      if (motionQuery.matches) { celeb = celebTarget; burst = 0; staticFrame(); }
+      if (!motionAllowed()) { celeb = celebTarget; burst = 0; staticFrame(); }
     }).observe(victoryModal, { attributes: true, attributeFilter: ['open'] });
   }
   let scale = Math.min(devicePixelRatio || 1, 1.5) * 0.7;
@@ -636,7 +638,7 @@ async function initGlassBackground() {
 
   // 点击页面时：背景泛起一圈从指尖扩散的水波光环，玻璃珠同时轻轻一闪
   addEventListener('pointerdown', (e) => {
-    if (e.button !== 0 || motionQuery.matches) return;
+    if (e.button !== 0 || !motionAllowed()) return;
     burst = Math.max(burst, 0.5);
     clickX = e.clientX * scale;
     clickY = e.clientY * scale;
@@ -709,27 +711,30 @@ async function initGlassBackground() {
   }
 
   function play() {
-    if (rafId || motionQuery.matches || document.hidden) return;
+    if (rafId || !motionAllowed() || document.hidden) return;
     lastNow = 0;
     rafId = requestAnimationFrame(frameAdaptive);
   }
 
   addEventListener('resize', () => {
     resize();
-    if (motionQuery.matches) staticFrame();
+    if (!motionAllowed()) staticFrame();
   });
   // 面板高度会随游戏 / 断点变化，跟着重算尺寸
   if (controlPanel && 'ResizeObserver' in window) {
     new ResizeObserver(() => {
       resize();
-      if (motionQuery.matches) staticFrame();
+      if (!motionAllowed()) staticFrame();
     }).observe(controlPanel);
   }
-  darkQuery.addEventListener('change', () => { if (motionQuery.matches) staticFrame(); });
-  // 手动切换主题（data-theme）时也要刷新静态帧
-  new MutationObserver(() => { if (motionQuery.matches) staticFrame(); })
-    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  motionQuery.addEventListener('change', () => { motionQuery.matches ? staticFrame() : play(); });
+  darkQuery.addEventListener('change', () => { if (!motionAllowed()) staticFrame(); });
+  // 手动切换主题或背景动效时同步刷新；重新开启则恢复逐帧绘制。
+  new MutationObserver((records) => {
+    const motionChanged = records.some((record) => record.attributeName === 'data-background-motion');
+    if (motionChanged) motionAllowed() ? play() : staticFrame();
+    else if (!motionAllowed()) staticFrame();
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-background-motion'] });
+  motionQuery.addEventListener('change', () => { motionAllowed() ? play() : staticFrame(); });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       cancelAnimationFrame(rafId);
@@ -740,7 +745,7 @@ async function initGlassBackground() {
   });
 
   resize();
-  if (motionQuery.matches) staticFrame();
+  if (!motionAllowed()) staticFrame();
   else play();
 }
 

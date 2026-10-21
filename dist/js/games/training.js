@@ -88,7 +88,7 @@ export const reaction = (() => {
     id: 'reaction', name: '反应测试', icon: 'ϟ', subtitle: 'REACTION TIME',
     sizes: [{ value: 305, label: '5 次平均' }], difficulties: [{ value: 'normal', label: '标准' }],
     howToTitle: '等变绿，再点击',
-    howTo: '<p>点击大区域开始一轮。红色表示等待，变成绿色并出现<strong>「现在点击」</strong>后，立刻点击或按空格 / Enter。</p><p>提前点击算抢跑，需要重试本轮；完成 5 次后显示平均与最快反应时间。打开菜单、切换标签页或窗口失焦会中断当前轮，不计入结果。</p><p>最佳平均成绩保存在当前浏览器，完成后也可登录上传至反应排行榜。结果受显示器和输入设备延迟影响，适合休闲练习。</p>',
+    howTo: '<p>点击大区域开始一轮。红色表示等待，变成绿色并出现<strong>「现在点击」</strong>后，立刻点击或按空格 / Enter。</p><p>提前点击算抢跑，需要重试本轮；完成 5 次后显示平均与最快反应时间。打开菜单、切换标签页或窗口失焦会中断当前轮，不计入结果。</p><p>首次进入反应测试时背景动效默认暂停，减少视觉干扰；可用顶栏的背景动效按钮重新开启。最佳平均成绩保存在当前浏览器，完成后也可登录上传至反应排行榜。结果受显示器和输入设备延迟影响，适合休闲练习。</p>',
     newGame,
     mount(context) {
       ctx = context; controller = new AbortController(); const { signal } = controller; best = readBest(key);
