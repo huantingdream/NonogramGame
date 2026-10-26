@@ -7,9 +7,15 @@ export function animate(element, frames, options = {}) {
   if (!element) return null;
   byElement.get(element)?.cancel();
   if (!motionEnabled() || !element.animate) return null;
-  const animation = element.animate(frames, {
-    duration: 220, easing: 'cubic-bezier(.2,.75,.25,1)', ...options
-  });
+  let animation;
+  try {
+    animation = element.animate(frames, {
+      duration: 220, easing: 'cubic-bezier(.2,.75,.25,1)', ...options
+    });
+  } catch (_) {
+    // Unsupported keyframes must never interrupt a move, render or win check.
+    return null;
+  }
   byElement.set(element, animation);
   running.add(animation);
   const clean = () => {

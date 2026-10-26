@@ -1,4 +1,4 @@
-import { animate, cancelMotion } from './motion.js';
+import { animate, cancelMotion } from './motion.js?v=20261026-4';
 
 // Keep cell buttons (and keyboard focus) alive so CSS state transitions can run.
 // Markup is generated only by the local puzzle renderers, never from user input.

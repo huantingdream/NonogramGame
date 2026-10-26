@@ -1,7 +1,7 @@
 // 个人战绩：本机记录每一局结果（最多保留 300 条），展示总览、各游戏最佳与最近成绩。
 import { escapeHtml, formatElapsed } from './utils.js';
 import { scoreLabel } from './score.js';
-import { pop, staggerPop } from './motion.js';
+import { pop, staggerPop } from './motion.js?v=20261026-4';
 
 const STATS_KEY = 'gejian:stats';
 const MAX_PLAYS = 300;

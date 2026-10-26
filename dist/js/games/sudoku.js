@@ -1,4 +1,4 @@
-import { pop, enterBoard } from '../core/motion.js';
+import { pop, enterBoard } from '../core/motion.js?v=20261026-4';
 // 数独：9 × 9，每行、每列、每个 3 × 3 宫填入 1–9 且不重复。
 // 题目由种子确定性生成：先填出完整解，再在保证唯一解的前提下对称挖空。
 

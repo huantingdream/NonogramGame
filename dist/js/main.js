@@ -4,29 +4,29 @@ import { createTimer } from "./core/timer.js?v=20261021-2";
 import { formatElapsed, showToast } from "./core/utils.js";
 import { initFirebase } from "./core/firebase.js";
 import { initAccount } from "./core/account.js";
-import { initVictory, showVictory, closeVictory } from "./core/victory.js";
-import { initLeaderboard } from "./core/leaderboard.js";
-import { animate, enterBoard, cancelMotion } from "./core/motion.js";
+import { initVictory, showVictory, closeVictory } from "./core/victory.js?v=20261026-4";
+import { initLeaderboard } from "./core/leaderboard.js?v=20261026-4";
+import { animate, enterBoard, cancelMotion } from "./core/motion.js?v=20261026-4";
 import { initGamePicker } from "./core/game-picker.js";
 import { initTheme } from "./core/theme.js";
 import { initBackgroundMotion, setBackgroundMotionContext } from "./core/background-motion.js?v=20261021-2";
 import { initSound, playSound } from "./core/sound.js";
-import { initStats, recordPlay } from "./core/stats.js";
-import { initDaily, recordIfDaily } from "./core/daily.js";
+import { initStats, recordPlay } from "./core/stats.js?v=20261026-4";
+import { initDaily, recordIfDaily } from "./core/daily.js?v=20261026-4";
 
-import nonogram from "./games/nonogram.js";
-import sudoku from "./games/sudoku.js";
-import minesweeper from "./games/minesweeper.js";
+import nonogram from "./games/nonogram.js?v=20261026-4";
+import sudoku from "./games/sudoku.js?v=20261026-4";
+import minesweeper from "./games/minesweeper.js?v=20261026-4";
 
-import twenty48 from "./games/twenty48.js";
-import { slitherlink, hashi } from "./games/line-puzzles.js";
-import netwalk from "./games/netwalk.js?v=20261026-2";
-import akari from "./games/akari.js?v=20261026-2";
-import nurikabe from "./games/nurikabe.js?v=20261026-2";
-import kenken from "./games/kenken.js?v=20261026-2";
+import twenty48 from "./games/twenty48.js?v=20261026-4";
+import { slitherlink, hashi } from "./games/line-puzzles.js?v=20261026-4";
+import netwalk from "./games/netwalk.js?v=20261026-4";
+import akari from "./games/akari.js?v=20261026-4";
+import nurikabe from "./games/nurikabe.js?v=20261026-4";
+import kenken from "./games/kenken.js?v=20261026-4";
 
-import { reaction, aim } from "./games/training.js?v=20261021-2";
-import watermelon from "./games/watermelon.js";
+import { reaction, aim } from "./games/training.js?v=20261026-4";
+import watermelon from "./games/watermelon.js?v=20261026-4";
 
 const GAMES = [nonogram, sudoku, kenken, minesweeper, twenty48, slitherlink, hashi, nurikabe, akari, netwalk, watermelon, reaction, aim];
 const STORAGE_KEY = "gejian:lastGame";
@@ -110,7 +110,12 @@ function buildGameContext(game) {
 
 async function mountGame(gameId) {
   const game = GAMES.find((item) => item.id === gameId) || GAMES[0];
-  if (currentGameId === game.id) return;
+  if (currentGameId === game.id) {
+    // Returning to the current game also invalidates any pending fade-out.
+    ++mountSeq;
+    cancelMotion(document.querySelector('#gameRoot'));
+    return true;
+  }
   const seq = ++mountSeq;
 
   // 旧棋盘先淡出下沉，再挂载新游戏；减少动态时 animate 返回 null，直接继续
@@ -127,7 +132,7 @@ async function mountGame(gameId) {
       ]).catch(() => {});
       leaving.cancel(); // 动画已结束或被兜底：主动取消，清掉 forwards 填充，否则新棋盘会停在透明状态
     }
-    if (seq !== mountSeq) return; // 等待期间又切了别的游戏，放弃这次挂载
+    if (seq !== mountSeq) return false; // 等待期间又切了别的游戏，放弃这次挂载
   }
 
   closeVictory();
@@ -155,6 +160,7 @@ async function mountGame(gameId) {
   game.mount(buildGameContext(game));
   enterBoard(document.querySelector("#controlPanel"));
   enterBoard(document.querySelector("#boardToolbar"));
+  return true;
 }
 
 // ---------------------------------------------------------------------------

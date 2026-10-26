@@ -1,7 +1,7 @@
 // 数墙（Nurikabe）：涂出连成一片的「海」，让每座岛的大小恰好等于数字。
 // 规则：海全部连通、没有 2×2 的海块、每座岛恰好含一个数字且大小等于数字。
-import { pop, cancelMotion, enterBoard } from '../core/motion.js';
-import { updateBoard } from '../core/board-view.js?v=20261026-2';
+import { pop, cancelMotion, enterBoard } from '../core/motion.js?v=20261026-4';
+import { updateBoard } from '../core/board-view.js?v=20261026-4';
 import { randomSeed, makeSeededRandom } from '../core/utils.js';
 import { playSound } from '../core/sound.js';
 import { generateNurikabe, checkNurikabe } from './new-puzzle-logic.js';

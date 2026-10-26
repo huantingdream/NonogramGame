@@ -1,7 +1,7 @@
 // 管道（Netwalk）：旋转格子，让所有接口两两对接并连成一张网。
 // 题目由随机生成树得到：先保证有解，再随机旋转打乱。纯规则见 new-puzzle-logic.js。
-import { pop, cancelMotion, enterBoard, animate, motionEnabled } from '../core/motion.js';
-import { updateBoard } from '../core/board-view.js?v=20261026-2';
+import { pop, cancelMotion, enterBoard, animate, motionEnabled } from '../core/motion.js?v=20261026-4';
+import { updateBoard } from '../core/board-view.js?v=20261026-4';
 import { randomSeed, makeSeededRandom } from '../core/utils.js';
 import { playSound } from '../core/sound.js';
 import { rotateMask, generateNetwalk, checkNetwalk, NETWALK_DIRECTIONS } from './new-puzzle-logic.js';

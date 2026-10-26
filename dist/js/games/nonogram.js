@@ -1,4 +1,4 @@
-import { pop, enterBoard, animate, motionEnabled } from '../core/motion.js';
+import { pop, enterBoard, animate, motionEnabled } from '../core/motion.js?v=20261026-4';
 // 数织 Nonogram：根据行列数字线索填出隐藏图案。
 // 题目由种子确定性生成，并验证只有一个正确解。
 

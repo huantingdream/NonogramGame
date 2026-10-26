@@ -1,4 +1,4 @@
-import { pop, enterBoard } from '../core/motion.js';
+import { pop, enterBoard } from '../core/motion.js?v=20261026-4';
 import { randomSeed, makeSeededRandom } from '../core/utils.js';
 import { generateLoop, checkLoop, generateBridges, checkBridges, bridgeCounts, crosses } from './puzzle-logic.js';
 

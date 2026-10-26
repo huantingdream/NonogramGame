@@ -1,5 +1,5 @@
 // Celebration effects never own game state. Fired by showVictory(), silenced by closeVictory().
-import { motionEnabled } from './motion.js';
+import { motionEnabled } from './motion.js?v=20261026-4';
 
 const PALETTE = ['#ffd166', '#ef476f', '#06d6a0', '#4ea8ff', '#b388ff', '#ff9f6e', '#f8f7ff'];
 const LAUNCHES = 7;        // rockets fired per celebration

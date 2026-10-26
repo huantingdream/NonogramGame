@@ -1,7 +1,7 @@
 // 每日挑战：日期 + 游戏 + 规格 推出确定性种子，所有玩家同题；
 // 完成任意一款即打卡，连续打卡天数持久化在本机。
 import { escapeHtml, setNextSeed, showToast } from './utils.js';
-import { pop } from './motion.js';
+import { pop } from './motion.js?v=20261026-4';
 
 const DAILY_KEY = 'gejian:daily';
 
@@ -22,6 +22,7 @@ const DAILY_CONFIG = {
 
 let games = [];
 let selectGame = null;
+let dailyRequest = 0;
 
 export function todayKey(offsetDays = 0) {
   const date = new Date();
@@ -133,17 +134,22 @@ export function initDaily({ games: registeredGames, onSelect }) {
     const item = event.target.closest('[data-daily-game]');
     if (item) {
       modal.close();
-      startDaily(item.dataset.dailyGame);
+      startDaily(item.dataset.dailyGame).catch((error) => {
+        console.error('Unable to start daily challenge', error);
+        showToast('今日挑战暂时无法开始，请重试');
+      });
     }
   });
 }
 
 // 切换到游戏、套用每日固定规格、用每日种子开一局
-export function startDaily(gameId) {
+export async function startDaily(gameId) {
   const game = games.find((item) => item.id === gameId);
   const config = DAILY_CONFIG[gameId];
   if (!game || !config || typeof selectGame !== 'function') return;
-  selectGame(gameId);
+  const request = ++dailyRequest;
+  const mounted = await selectGame(gameId);
+  if (mounted === false || request !== dailyRequest) return;
   if (typeof game.configure === 'function') game.configure(config);
   setNextSeed(dailySeed(todayKey(), gameId, config.size, config.difficulty));
   game.newGame();

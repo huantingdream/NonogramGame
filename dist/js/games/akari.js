@@ -1,7 +1,7 @@
 // 点灯（Akari）：在白色格放灯，照亮整个棋盘。
 // 灯会照亮同行同列直到黑格；任意两盏灯不能互相照亮；数字黑格周围必须恰好有对应数量的灯。
-import { pop, cancelMotion, enterBoard } from '../core/motion.js';
-import { updateBoard } from '../core/board-view.js?v=20261026-2';
+import { pop, cancelMotion, enterBoard } from '../core/motion.js?v=20261026-4';
+import { updateBoard } from '../core/board-view.js?v=20261026-4';
 import { randomSeed, makeSeededRandom } from '../core/utils.js';
 import { playSound } from '../core/sound.js';
 import { generateAkari, checkAkari, analyzeAkari } from './new-puzzle-logic.js';

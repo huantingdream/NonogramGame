@@ -1,6 +1,6 @@
 import { randomSeed, makeSeededRandom } from '../core/utils.js';
 import { trace2048, canMove2048 } from './puzzle-logic.js';
-import { animate, pop, enterBoard, cancelMotion, motionEnabled } from '../core/motion.js';
+import { animate, pop, enterBoard, cancelMotion, motionEnabled } from '../core/motion.js?v=20261026-4';
 let ctx, controller, board, score, over, seed, random, pointer;
 let generation = 0, sliding = false, queuedDirection = null;
 function spawn() {

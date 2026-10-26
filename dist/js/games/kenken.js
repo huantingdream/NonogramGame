@@ -1,6 +1,6 @@
 // 聪明格（KenKen）：填 1..N 使每行每列不重复，且每个粗线笼满足左上角的算式。
-import { pop, cancelMotion, enterBoard } from '../core/motion.js';
-import { updateBoard } from '../core/board-view.js?v=20261026-2';
+import { pop, cancelMotion, enterBoard } from '../core/motion.js?v=20261026-4';
+import { updateBoard } from '../core/board-view.js?v=20261026-4';
 import { randomSeed, makeSeededRandom } from '../core/utils.js';
 import { playSound } from '../core/sound.js';
 import { generateLatin, generateKenken, checkKenken } from './new-puzzle-logic.js';
@@ -65,7 +65,7 @@ function render(popCell = -1) {
 }
 
 function fill(value) {
-  if (won || selected == null) return;
+  if (won || selected == null || !Number.isInteger(value) || value < 0 || value > n) return;
   grid[selected] = value;
   playSound(value ? 'fill' : 'mark');
   ctx.timer.start();
@@ -96,6 +96,7 @@ function newGame() {
   ctx.setStatus('idle');
   ctx.setTitle(`${n} × ${n} · 聪明格`);
   ctx.setPuzzleNumber(seed % 10000);
+  ctx.els.boardToolbar.innerHTML = `<div class="number-pad kenken-pad" aria-label="数字键盘">${Array.from({ length: n }, (_, i) => `<button type="button" data-value="${i + 1}">${i + 1}</button>`).join('')}<button type="button" data-value="0" aria-label="清除">⌫</button></div>`;
   render();
   enterBoard(ctx.els.gameRoot);
 }
@@ -121,7 +122,6 @@ export default {
     const options = { signal: controller.signal };
     ctx.els.controlPanel.innerHTML = `<div class="eyebrow"><span></span> MATH PUZZLE</div><h1>数字入笼，<br><em>行列井然有序。</em></h1><div class="field-group"><div class="field-label"><span>棋盘规格</span></div><div class="segmented" role="radiogroup" aria-label="棋盘规格">${PRESETS.map((v) => `<button type="button" role="radio" aria-checked="${n === v}" data-size="${v}">${v} × ${v}</button>`).join('')}</div></div><div class="tile-score"><span>已填格数</span><strong id="kenkenFilled" aria-live="polite">—</strong></div><button type="button" class="primary-button" data-action="new">↻ 生成新题目</button><div class="mini-guide"><span class="guide-icon">✦</span><p><strong>每行每列，1 到 N 不重复。</strong><br>笼内数字要满足左上角算式。</p></div>`;
     ctx.els.gameRoot.innerHTML = '<div class="kenken-grid" role="group" aria-label="聪明格棋盘"></div>';
-    ctx.els.boardToolbar.innerHTML = `<div class="number-pad kenken-pad" aria-label="数字键盘">${Array.from({ length: n }, (_, i) => `<button type="button" data-value="${i + 1}">${i + 1}</button>`).join('')}<button type="button" data-value="0" aria-label="清除">⌫</button></div>`;
     ctx.els.desktopTip.textContent = '点击格子选中 · 数字键 1-9 填入 · ⌫ 清除 · 填满且全部满足即通关';
     ctx.els.controlPanel.addEventListener('click', (e) => {
       const size = e.target.closest('[data-size]');
@@ -129,7 +129,6 @@ export default {
         n = Number(size.dataset.size);
         ctx.els.controlPanel.querySelectorAll('[data-size]').forEach((b) => b.setAttribute('aria-checked', String(b === size)));
         newGame();
-        ctx.els.boardToolbar.innerHTML = `<div class="number-pad kenken-pad" aria-label="数字键盘">${Array.from({ length: n }, (_, i) => `<button type="button" data-value="${i + 1}">${i + 1}</button>`).join('')}<button type="button" data-value="0" aria-label="清除">⌫</button></div>`;
       }
       if (e.target.closest('[data-action="new"]')) newGame();
     }, options);

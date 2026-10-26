@@ -1,5 +1,5 @@
 import { randomSeed } from '../core/utils.js';
-import { pop, enterBoard, animate, cancelMotion } from '../core/motion.js';
+import { pop, enterBoard, animate, cancelMotion } from '../core/motion.js?v=20261026-4';
 import { inputTime } from '../core/input-time.js';
 import { pauseBackgroundMotion } from '../core/background-motion.js?v=20261021-2';
 

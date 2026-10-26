@@ -2,7 +2,7 @@
 import { showToast } from './utils.js';
 import { getFirebase, getCurrentUser, onAuthChange, displayNameForUser } from './firebase.js';
 import { openAuthModal } from './account.js';
-import { celebrate, stopFireworks } from './fireworks.js';
+import { celebrate, stopFireworks } from './fireworks.js?v=20261026-4';
 import { playSound } from './sound.js';
 import { wireShareButtons } from './share.js';
 

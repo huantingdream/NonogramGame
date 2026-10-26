@@ -2,7 +2,7 @@
 // 物理与水果表是纯逻辑（不依赖 DOM），渲染与输入集中在模块底部。
 
 import { randomSeed, makeSeededRandom } from '../core/utils.js';
-import { pop, enterBoard } from '../core/motion.js';
+import { pop, enterBoard } from '../core/motion.js?v=20261026-4';
 
 // ---------------------------------------------------------------------------
 // 纯逻辑：水果表与圆形物理

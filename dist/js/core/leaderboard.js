@@ -3,7 +3,7 @@ import { scoreHeading, scoreLabel, scoreDetail } from './score.js';
 
 import { escapeHtml, showToast } from "./utils.js";
 import { getFirebase, getCurrentUser, onAuthChange, displayNameForUser } from "./firebase.js";
-import { staggerPop } from "./motion.js";
+import { staggerPop } from "./motion.js?v=20261026-4";
 import { openAuthModal } from "./account.js";
 
 let games = [];

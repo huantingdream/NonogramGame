@@ -1,4 +1,4 @@
-import { animate, pop, enterBoard } from '../core/motion.js';
+import { animate, pop, enterBoard } from '../core/motion.js?v=20261026-4';
 // 扫雷：点开所有安全格即获胜，点到雷就失败。
 // 第一次点击必定安全（雷在首击后才布置，并避开首击格及周围）。
 
