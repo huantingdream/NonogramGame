@@ -1,6 +1,7 @@
 // 点灯（Akari）：在白色格放灯，照亮整个棋盘。
 // 灯会照亮同行同列直到黑格；任意两盏灯不能互相照亮；数字黑格周围必须恰好有对应数量的灯。
-import { pop, enterBoard } from '../core/motion.js';
+import { pop, cancelMotion, enterBoard } from '../core/motion.js';
+import { updateBoard } from '../core/board-view.js?v=20261026-2';
 import { randomSeed, makeSeededRandom } from '../core/utils.js';
 import { playSound } from '../core/sound.js';
 import { generateAkari, checkAkari, analyzeAkari } from './new-puzzle-logic.js';
@@ -16,7 +17,7 @@ function render(popCell = -1) {
   const board = ctx.els.gameRoot.querySelector('.akari-grid');
   board.style.setProperty('--n', n);
   const { lit, conflicts, clueSatisfied } = analyzeAkari(puzzle, lights);
-  board.innerHTML = puzzle.cells.map((value, i) => {
+  updateBoard(board, puzzle.cells.map((value, i) => {
     const r = Math.floor(i / n), c = i % n;
     const pos = `第 ${r + 1} 行第 ${c + 1} 列`;
     if (value !== null) {
@@ -29,11 +30,11 @@ function render(popCell = -1) {
     if (lights.has(i)) classes.push('light');
     if (conflicts.has(i)) classes.push('conflict');
     if (marks.has(i)) classes.push('marked');
-    const content = lights.has(i) ? '💡' : marks.has(i) ? '·' : '';
+    const content = lights.has(i) ? '<svg class="akari-bulb" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 15a6 6 0 1 1 8 0l-1 3H9z"/><path d="M9 21h6M12 1v2M2 10h2M20 10h2M4 3l2 2M18 5l2-2"/></svg>' : marks.has(i) ? '·' : '';
     const label = lights.has(i) ? '有灯' : marks.has(i) ? '已标记' : lit.has(i) ? '已被照亮' : '未被照亮';
     return `<button type="button" class="${classes.join(' ')}" data-cell="${i}" aria-label="${pos}，${label}" aria-pressed="${lights.has(i)}">${content}</button>`;
-  }).join('');
-  if (popCell >= 0 && board.children[popCell]) pop(board.children[popCell]);
+  }).join(''), { origin: popCell, columns: n, spread: 'lit' });
+  if (popCell >= 0 && board.children[popCell] && !conflicts.has(popCell)) pop(board.children[popCell]);
   const remaining = puzzle.cells.filter((v, i) => v === null && !lit.has(i)).length;
   ctx.els.controlPanel.querySelector('#akariRemaining').textContent = remaining;
 }
@@ -67,6 +68,8 @@ function toggle(cell, mark = false) {
 }
 
 function newGame() {
+  cancelMotion(ctx.els.gameRoot);
+  cancelMotion(ctx.els.controlPanel);
   ctx.closeVictory();
   seed = randomSeed();
   const random = makeSeededRandom(seed);
@@ -75,6 +78,7 @@ function newGame() {
   marks = new Set();
   won = false;
   markMode = false;
+  ctx.els.boardToolbar.querySelectorAll('[data-mode]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.mode === 'light')));
   ctx.timer.reset();
   ctx.setStatus('idle');
   ctx.setTitle(`${n} × ${n} · 点亮棋盘`);
@@ -134,5 +138,5 @@ export default {
     }, options);
     newGame();
   },
-  unmount() { controller.abort(); ctx = null; }
+  unmount() { controller.abort(); cancelMotion(ctx.els.gameRoot); cancelMotion(ctx.els.controlPanel); ctx = null; }
 };

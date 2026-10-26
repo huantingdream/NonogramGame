@@ -1,5 +1,17 @@
 /* 各游戏棋盘样式：数织、数独、扫雷。 */
 
+:root {
+  --puzzle-frame: color-mix(in srgb, var(--blue) 6%, var(--white));
+  --puzzle-pulse: color-mix(in srgb, var(--blue) 55%, transparent);
+  --puzzle-lit: #fff3c4;
+  --puzzle-lit-ink: #806019;
+}
+:root[data-theme="dark"] {
+  --puzzle-frame: #131a31;
+  --puzzle-lit: #494126;
+  --puzzle-lit-ink: #ffe19a;
+}
+
 /* ============================== 数织 ============================== */
 
 .puzzle-grid {
@@ -421,8 +433,6 @@ button.akari-cell:focus-visible { outline: 2px solid var(--blue); outline-offset
 .kenken-pad { justify-content: center; margin: auto; }
 
 /* ============================== 新游戏深色模式 ============================== */
-[data-theme="dark"] .netwalk-grid, [data-theme="dark"] .akari-grid,
-[data-theme="dark"] .nurikabe-grid, [data-theme="dark"] .kenken-grid { background: #10152c; }
 [data-theme="dark"] .netwalk-cell { background: #242c50; color: #5f6a94; }
 [data-theme="dark"] .netwalk-cell.connected { color: #8ea6ff; background: rgba(93, 125, 255, 0.18); }
 [data-theme="dark"] .netwalk-grid.won .netwalk-cell { color: #4fd198; background: rgba(79, 209, 152, 0.12); }
@@ -471,3 +481,59 @@ button.akari-cell:focus-visible { outline: 2px solid var(--blue); outline-offset
 [data-theme="dark"] .kenken-cell.cage-ok .cage-label { color: #4fd198; }
 [data-theme="dark"] .nurikabe-cell.sea.stray { background: #3d4c92; }
 [data-theme="dark"] .bridge-island.linked { border-color: #8ea6ff; box-shadow: 0 0 0 3px rgba(93, 125, 255, 0.25); }
+
+/* Shared puzzle materials: quiet glass rim, readable cells and semantic accents. */
+.board-scroll:has(.netwalk-grid, .akari-grid, .nurikabe-grid, .kenken-grid) { max-height: none; }
+.netwalk-grid, .akari-grid, .nurikabe-grid, .kenken-grid {
+  background: var(--puzzle-frame);
+  border: 1px solid color-mix(in srgb, var(--blue) 14%, var(--soft-line));
+  border-radius: 20px;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--white) 80%, transparent), 0 10px 28px color-mix(in srgb, var(--blue) 7%, transparent);
+}
+.netwalk-cell, .akari-cell, .nurikabe-cell, .kenken-cell {
+  transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+.netwalk-cell svg { transform-box: view-box; transform-origin: center; }
+.akari-grid { --puzzle-pulse: #e4b347; }
+.akari-cell.lit { background: var(--puzzle-lit); color: var(--puzzle-lit-ink); }
+[data-theme="dark"] .akari-cell.lit { background: var(--puzzle-lit); color: var(--puzzle-lit-ink); }
+.akari-cell.light, [data-theme="dark"] .akari-cell.light {
+  background: #ffe08a; color: #695019;
+  box-shadow: inset 0 0 0 1px #d7a637;
+}
+.akari-cell.conflict, [data-theme="dark"] .akari-cell.conflict { background: var(--danger); color: #101a3d; }
+.akari-bulb { width: 58%; height: 58%; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.akari-cell.black.satisfied { background: color-mix(in srgb, var(--success) 70%, #17253d); }
+.nurikabe-grid, .kenken-grid { --puzzle-pulse: var(--success); }
+.kenken-value { display: inline-block; }
+.kenken-cell.selected { background: var(--blue-soft); }
+.control-panel .tile-score, .control-panel .wm-next {
+  min-height: 62px; margin: 14px 0; padding: 13px 16px;
+  color: #dce5ff; background: rgba(255,255,255,.09);
+  border: 1px solid rgba(255,255,255,.18); border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+  font-size: .82rem;
+}
+.control-panel .tile-score strong { color: #f7f9ff; font-size: 26px; font-variant-numeric: tabular-nums; }
+.control-panel .tile-score + .tile-score { margin-top: -4px; }
+.control-panel .training-stats {
+  padding: 14px 16px; border: 1px solid rgba(255,255,255,.18);
+  border-radius: 14px; background: rgba(255,255,255,.09);
+}
+.control-panel .training-stats strong { color: #f7f9ff; }
+.board-toolbar :is(.secondary-button, .undo-button, .number-pad button, .tool-switch button, .direction-pad button) {
+  transition: background-color 160ms ease, color 160ms ease, scale 120ms ease;
+}
+.board-toolbar button:active:not(:disabled) { scale: .96; }
+@media (max-width:620px) {
+  .netwalk-grid, .akari-grid, .nurikabe-grid, .kenken-grid { padding: 7px; border-radius: 15px; }
+  .control-panel .tile-score { min-height: 48px; margin: 10px 0; padding: 9px 13px; }
+  .control-panel .tile-score strong { font-size: 22px; }
+  .control-panel .training-stats { padding: 12px; }
+  .kenken-pad { width: 100%; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .netwalk-cell, .netwalk-cell path, .netwalk-cell circle, .akari-cell, .nurikabe-cell, .kenken-cell,
+  .board-toolbar :is(.secondary-button, .undo-button, .number-pad button, .tool-switch button, .direction-pad button) { transition: none; }
+  .board-toolbar button:active:not(:disabled) { scale: 1; }
+}

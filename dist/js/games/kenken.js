@@ -1,5 +1,6 @@
 // 聪明格（KenKen）：填 1..N 使每行每列不重复，且每个粗线笼满足左上角的算式。
-import { pop, enterBoard } from '../core/motion.js';
+import { pop, cancelMotion, enterBoard } from '../core/motion.js';
+import { updateBoard } from '../core/board-view.js?v=20261026-2';
 import { randomSeed, makeSeededRandom } from '../core/utils.js';
 import { playSound } from '../core/sound.js';
 import { generateLatin, generateKenken, checkKenken } from './new-puzzle-logic.js';
@@ -46,7 +47,7 @@ function render(popCell = -1) {
     }
   });
 
-  board.innerHTML = grid.map((value, i) => {
+  updateBoard(board, grid.map((value, i) => {
     const r = Math.floor(i / n), c = i % n;
     const borders = [
       r === 0 || cageOf[i - n] !== cageOf[i] ? 'cage-top' : '',
@@ -58,8 +59,8 @@ function render(popCell = -1) {
     const label = cage ? `<span class="cage-label">${cage.target}${OP_SYMBOLS[cage.op]}</span>` : '';
     const classes = ['kenken-cell', borders, i === selected ? 'selected' : '', dup.has(i) ? 'dup' : '', cageOk[cageOf[i]] ? 'cage-ok' : ''].filter(Boolean).join(' ');
     return `<button type="button" class="${classes}" data-cell="${i}" aria-label="第 ${r + 1} 行第 ${c + 1} 列，${value ? `已填 ${value}` : '空格'}${dup.has(i) ? '，与同行/列重复' : ''}${cage ? `，笼子算式 ${cage.target}${OP_SYMBOLS[cage.op]}${cageOk[cageOf[i]] ? '，已满足' : ''}` : ''}">${label}<span class="kenken-value">${value || ''}</span></button>`;
-  }).join('');
-  if (popCell >= 0 && board.children[popCell]) pop(board.children[popCell]);
+  }).join(''), { origin: popCell, columns: n, spread: 'cage-ok' });
+  if (popCell >= 0 && board.children[popCell]) pop(board.children[popCell].querySelector('.kenken-value'));
   ctx.els.controlPanel.querySelector('#kenkenFilled').textContent = `${grid.filter(Boolean).length} / ${n * n}`;
 }
 
@@ -82,6 +83,8 @@ function fill(value) {
 }
 
 function newGame() {
+  cancelMotion(ctx.els.gameRoot);
+  cancelMotion(ctx.els.controlPanel);
   ctx.closeVictory();
   seed = randomSeed();
   const random = makeSeededRandom(seed);
@@ -145,5 +148,5 @@ export default {
     }, options);
     newGame();
   },
-  unmount() { controller.abort(); ctx = null; }
+  unmount() { controller.abort(); cancelMotion(ctx.els.gameRoot); cancelMotion(ctx.els.controlPanel); ctx = null; }
 };

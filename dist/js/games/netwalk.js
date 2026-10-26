@@ -1,6 +1,7 @@
 // 管道（Netwalk）：旋转格子，让所有接口两两对接并连成一张网。
 // 题目由随机生成树得到：先保证有解，再随机旋转打乱。纯规则见 new-puzzle-logic.js。
-import { pop, enterBoard, animate, motionEnabled } from '../core/motion.js';
+import { pop, cancelMotion, enterBoard, animate, motionEnabled } from '../core/motion.js';
+import { updateBoard } from '../core/board-view.js?v=20261026-2';
 import { randomSeed, makeSeededRandom } from '../core/utils.js';
 import { playSound } from '../core/sound.js';
 import { rotateMask, generateNetwalk, checkNetwalk, NETWALK_DIRECTIONS } from './new-puzzle-logic.js';
@@ -61,13 +62,15 @@ function render(animateCell = -1) {
   grid.style.setProperty('--n', n);
   grid.classList.toggle('won', won);
   const { connected, dangling } = analyze();
-  grid.innerHTML = values.map((mask, i) => {
+  updateBoard(grid, values.map((mask, i) => {
     const live = connected.has(i);
     const stateLabel = live ? '已接通' : '未接通';
     const danglingLabel = dangling[i] ? '，有悬空管口' : '';
     return `<button type="button" class="netwalk-cell${live ? ' connected' : ''}" data-cell="${i}" aria-label="第 ${Math.floor(i / n) + 1} 行第 ${i % n + 1} 列管道，${stateLabel}${danglingLabel}，点击顺时针旋转">${cellSvg(mask, dangling[i])}</button>`;
-  }).join('');
-  if (animateCell >= 0) pop(grid.children[animateCell]);
+  }).join(''), { origin: animateCell, columns: n, spread: 'connected' });
+  if (animateCell >= 0) animate(grid.children[animateCell].querySelector('svg'), [
+    { transform: 'rotate(-90deg)' }, { transform: 'rotate(0deg)' }
+  ], { duration: 190 });
   ctx.els.controlPanel.querySelector('#netwalkMoves').textContent = moves;
   const linked = ctx.els.controlPanel.querySelector('#netwalkLinked');
   if (linked) linked.textContent = `${connected.size} / ${n * n}`;
@@ -115,6 +118,8 @@ function rotate(cell) {
 }
 
 function newGame() {
+  cancelMotion(ctx.els.gameRoot);
+  cancelMotion(ctx.els.controlPanel);
   ctx.closeVictory();
   seed = randomSeed();
   const random = makeSeededRandom(seed);
@@ -171,7 +176,7 @@ export default {
     }, options);
     newGame();
   },
-  unmount() { controller.abort(); ctx = null; }
+  unmount() { controller.abort(); cancelMotion(ctx.els.gameRoot); cancelMotion(ctx.els.controlPanel); ctx = null; }
 };
 
 // 供浏览器回归测试使用（不影响游戏本身）。

@@ -20,10 +20,10 @@ import minesweeper from "./games/minesweeper.js";
 
 import twenty48 from "./games/twenty48.js";
 import { slitherlink, hashi } from "./games/line-puzzles.js";
-import netwalk from "./games/netwalk.js";
-import akari from "./games/akari.js";
-import nurikabe from "./games/nurikabe.js";
-import kenken from "./games/kenken.js";
+import netwalk from "./games/netwalk.js?v=20261026-2";
+import akari from "./games/akari.js?v=20261026-2";
+import nurikabe from "./games/nurikabe.js?v=20261026-2";
+import kenken from "./games/kenken.js?v=20261026-2";
 
 import { reaction, aim } from "./games/training.js?v=20261021-2";
 import watermelon from "./games/watermelon.js";

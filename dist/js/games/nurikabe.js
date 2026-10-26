@@ -1,6 +1,7 @@
 // 数墙（Nurikabe）：涂出连成一片的「海」，让每座岛的大小恰好等于数字。
 // 规则：海全部连通、没有 2×2 的海块、每座岛恰好含一个数字且大小等于数字。
-import { pop, enterBoard } from '../core/motion.js';
+import { pop, cancelMotion, enterBoard } from '../core/motion.js';
+import { updateBoard } from '../core/board-view.js?v=20261026-2';
 import { randomSeed, makeSeededRandom } from '../core/utils.js';
 import { playSound } from '../core/sound.js';
 import { generateNurikabe, checkNurikabe } from './new-puzzle-logic.js';
@@ -81,7 +82,7 @@ function render(popCell = -1) {
   board.style.setProperty('--n', n);
   const clueByCell = new Map(puzzle.clues.map((clue) => [clue.cell, clue.size]));
   const { straySea, blocked, islandState } = analyze();
-  board.innerHTML = state.map((value, i) => {
+  updateBoard(board, state.map((value, i) => {
     const r = Math.floor(i / n), c = i % n;
     const clue = clueByCell.get(i);
     const classes = ['nurikabe-cell', value === 1 ? 'sea' : value === 2 ? 'island' : ''];
@@ -94,8 +95,8 @@ function render(popCell = -1) {
     const label = clue != null ? `数字 ${clue}，岛` : STATE_LABELS[value];
     const content = clue != null ? clue : value === 2 ? '·' : '';
     return `<button type="button" class="${classes.join(' ')}" data-cell="${i}" aria-label="第 ${r + 1} 行第 ${c + 1} 列，${label}${warnings ? `，${warnings}` : ''}，点击切换">${content}</button>`;
-  }).join('');
-  if (popCell >= 0 && board.children[popCell]) pop(board.children[popCell]);
+  }).join(''), { origin: popCell, columns: n, spread: 'complete' });
+  if (popCell >= 0 && board.children[popCell] && !blocked.has(popCell) && islandState.get(popCell) !== 'overfull') pop(board.children[popCell]);
   ctx.els.controlPanel.querySelector('#nurikabeDecided').textContent = `${state.filter((v) => v !== 0).length} / ${n * n}`;
 }
 
@@ -119,6 +120,8 @@ function cycle(cell) {
 }
 
 function newGame() {
+  cancelMotion(ctx.els.gameRoot);
+  cancelMotion(ctx.els.controlPanel);
   ctx.closeVictory();
   seed = randomSeed();
   const random = makeSeededRandom(seed);
@@ -176,5 +179,5 @@ export default {
     }, options);
     newGame();
   },
-  unmount() { controller.abort(); ctx = null; }
+  unmount() { controller.abort(); cancelMotion(ctx.els.gameRoot); cancelMotion(ctx.els.controlPanel); ctx = null; }
 };
