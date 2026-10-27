@@ -5,7 +5,7 @@ test('rejected animation keyframes never prevent the caller from finishing its u
   const oldWindow = globalThis.window;
   globalThis.window = { matchMedia: () => ({ matches: false, addEventListener() {} }) };
   t.after(() => oldWindow === undefined ? delete globalThis.window : globalThis.window = oldWindow);
-  const { animate, cancelMotion } = await import('../dist/js/core/motion.js');
+  const { animate, cancelMotion } = await import('../src/core/motion.js');
   const element = { animate() { throw new TypeError('Unsupported keyframes'); } };
   let updated = false;
   assert.doesNotThrow(() => {

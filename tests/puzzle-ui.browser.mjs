@@ -1,5 +1,5 @@
 // Runs against the real page through either a CUA tab or the optional Playwright CLI below.
-// No Firebase writes, hidden game state or synthetic DOM events are used.
+// No live score writes, hidden game state or synthetic DOM events are used.
 import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
 
@@ -8,12 +8,12 @@ function helpers(tab, baseURL) {
   const page = tab.playwright;
   const open = async (game, board) => {
     await tab.goto(`${baseURL}?ui-test=${game}#${game}`);
-    await page.locator(board).waitFor({ state: 'visible' });
+    await page.locator(board).first().waitFor({ state: 'visible' });
   };
   const daily = async (game, board) => {
     await page.locator('#dailyButton').click();
     await page.locator(`[data-daily-game="${game}"]`).click();
-    await page.locator(board).waitFor({ state: 'visible' });
+    await page.locator(board).first().waitFor({ state: 'visible' });
   };
   return { page, open, daily };
 }

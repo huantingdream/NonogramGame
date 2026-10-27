@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { scoreOrder, scoreLabel, scoreDetail, gameMetrics } from '../dist/js/core/score.js';
+import { scoreOrder, scoreLabel, scoreDetail, gameMetrics } from '../shared/score.js';
 
 test('rank by milliseconds for reaction, hits then fewer shots for aim, points for 2048, seconds for puzzles', () => {
   assert.deepEqual(scoreOrder('reaction'), [['averageMs','asc'],['createdAt','asc']]);

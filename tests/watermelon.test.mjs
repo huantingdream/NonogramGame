@@ -7,9 +7,9 @@ globalThis.window = {
   matchMedia: () => ({ matches: true, addEventListener() {}, removeEventListener() {} })
 };
 
-const { __testing } = await import('../dist/js/games/watermelon.js');
+const { __testing } = await import('../src/games/watermelon.js');
 const { FRUITS, WIDTH, HEIGHT, WALL, DANGER_Y, SPAWNABLE, CLEAR_BONUS, createState, dropFruit, step } = __testing;
-const { makeSeededRandom } = await import('../dist/js/core/utils.js');
+const { makeSeededRandom } = await import('../src/core/utils.js');
 
 function simulate(state, seconds, emit) {
   for (let t = 0; t < seconds; t += 1 / 60) step(state, 1 / 60, emit);

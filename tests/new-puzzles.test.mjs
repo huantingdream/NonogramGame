@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateNetwalk, checkNetwalk, rotateMask, generateAkari, checkAkari, generateNurikabe, checkNurikabe, generateKenken, checkKenken } from '../dist/js/games/new-puzzle-logic.js';
-import { makeSeededRandom } from '../dist/js/core/utils.js';
+import { generateNetwalk, checkNetwalk, rotateMask, generateAkari, checkAkari, generateNurikabe, checkNurikabe, generateKenken, checkKenken } from '../src/games/new-puzzle-logic.js';
+import { makeSeededRandom } from '../src/core/utils.js';
 
 const rng = (seed) => makeSeededRandom(seed);
 

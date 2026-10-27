@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { inputTime } from '../dist/js/core/input-time.js';
+import { inputTime } from '../src/core/input-time.js';
 
 test('input time excludes handler queue delay and retains submillisecond precision', () => {
   assert.equal(inputTime({ timeStamp: 1200.25 }, 1500, 1700000000000), 1200.25);

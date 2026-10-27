@@ -1,0 +1,48 @@
+name: Test React and MySQL application
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: integration-root-only
+          MYSQL_DATABASE: gejian_test
+          MYSQL_USER: gejian
+          MYSQL_PASSWORD: integration-only
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysql -u gejian -pintegration-only -D gejian_test -e 'SELECT 1'"
+          --health-interval=10s --health-timeout=5s --health-retries=20
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_DATABASE: gejian_test
+      MYSQL_USER: gejian
+      MYSQL_PASSWORD: integration-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:api
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Browser regression
+        run: |
+          npm run dev > /tmp/gejian-vite.log 2>&1 &
+          VITE_PID=$!
+          trap 'kill "$VITE_PID"' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:7100/ > /dev/null; then break; fi
+            sleep 1
+          done
+          npm run test:browser

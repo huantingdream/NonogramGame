@@ -1,4 +1,12 @@
 .DS_Store
-
-
 *-debug.log
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+backups/
+private/
+*.sql.gz
+playwright-report/
+test-results/

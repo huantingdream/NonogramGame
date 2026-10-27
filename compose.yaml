@@ -1,0 +1,53 @@
+name: gejian
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: gejian
+      MYSQL_USER: gejian
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+    command: ["--innodb-buffer-pool-size=128M", "--max-connections=50", "--performance-schema=OFF", "--mysqlx=OFF"]
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    networks: [database]
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_PASSWORD\" mysql -u gejian -D gejian -e 'SELECT 1' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+  app:
+    build: .
+    image: gejian-app:latest
+    restart: unless-stopped
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      TRUSTED_PROXIES: loopback,172.16.0.0/12
+      APP_ORIGIN: https://games.huantingdream.site
+      MYSQL_HOST: db
+      MYSQL_DATABASE: gejian
+      MYSQL_USER: gejian
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      LEGACY_HASH_CONFIG_FILE: /run/secrets/firebase-hash-config.json
+    volumes:
+      - ./private/hash-config.json:/run/secrets/firebase-hash-config.json:ro
+    ports: ["127.0.0.1:3100:3100"]
+    networks: [database, web]
+    mem_limit: 512m
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+networks:
+  database: {internal: true}
+  web: {}

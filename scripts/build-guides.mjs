@@ -1,9 +1,9 @@
-// 生成 dist/guide/ 下的静态攻略页（SEO 内容页）。运行：node scripts/build-guides.mjs
+// 生成 public/guide/ 下的静态攻略页（SEO 内容页）。运行：node scripts/build-guides.mjs
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist', 'guide');
+const root = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'guide');
 mkdirSync(root, { recursive: true });
 
 const GAMES = [
@@ -343,4 +343,4 @@ writeFileSync(join(root, 'index.html'), index);
 for (const game of GAMES) {
   writeFileSync(join(root, `${game.id}.html`), page(game));
 }
-console.log(`已生成 ${GAMES.length} 个攻略页 + 索引页到 dist/guide/`);
+console.log(`已生成 ${GAMES.length} 个攻略页 + 索引页到 public/guide/`);

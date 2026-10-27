@@ -1,19 +1,80 @@
 # 格间小游戏
 
-纯静态小游戏合集：数织、数独、扫雷、2048、数回（Slitherlink）、数桥（Hashiwokakero）、管道（Netwalk）、点灯（Akari）、数墙（Nurikabe）、聪明格（KenKen）、合成大西瓜、反应测试、瞄准训练。无需构建或服务器运行时，可部署到 GitHub Pages。
+React 19 + Vite 8 前端、Fastify 5 / Node.js 24 后端、MySQL 8.4 数据库。正式站点：**https://games.huantingdream.site**。Nginx 提供 HTTPS，Node.js 同时提供静态资源与 `/api`；运行期间不访问 Firebase、Google SDK 或外部字体服务。
 
-## 本地开发与测试
+13 款游戏的算法、Canvas 渲染和输入计时继续复用经过测试的游戏引擎。React 管理应用布局、游戏选择、账号和排行榜；`useGameRuntime` 管理引擎生命周期。棋盘以及共享结果 / 每日挑战 / 本机战绩控制器通过稳定容器接入，避免 React 重绘破坏画布、焦点和精确计时。
+
+## 项目结构
+
+- `src/components/`：React 界面；`src/hooks/`：引擎生命周期。
+- `src/games/`：13 款游戏及注册表；`src/core/`：计时、音效、动效、每日挑战、成绩和 HTTP API。
+- `shared/`：前后端共用成绩规则、格式与校验。
+- `server/`：账号、会话、排行榜 API、数据库连接及版本化 SQL 迁移。
+- `public/`：图标、攻略和首屏主题脚本；`dist/` 是构建产物，不提交 Git。
+- `deploy/`：Nginx 与数据库备份脚本；`compose.yaml`：独立部署。
+
+## 本地开发
+
+需要 Node.js 24+、MySQL 8.4。创建本地数据库和专用用户后，将 `.env.example` 复制为 `.env`，填写自己的连接配置。生产密码仅存放在服务器。
 
 ```sh
-npm run dev
-npm test
+npm ci
+npm run db:migrate
+npm run dev:server   # 终端一：Node.js API，127.0.0.1:3100
+npm run dev          # 终端二：React，http://localhost:7100
 ```
 
-开发地址为 `http://localhost:7100`。测试使用 Node.js 内置测试工具，覆盖移动合并、失败判定、生成题目的解、单环和桥梁连通性，以及管道 / 点灯 / 数墙 / 聪明格的生成器与检查器。
+Vite 将 `/api` 代理给 Node.js。访问地址应与 `.env` 中 `APP_ORIGIN` 完全一致。
 
-新游戏的浏览器回归脚本为 `tests/training.browser.cjs`。启动本地服务后，在已安装 Playwright 和 Chromium 的环境运行 `node tests/training.browser.cjs`；可通过 `PLAYWRIGHT_MODULE` 指定已有 Playwright 模块路径。
+```sh
+npm run build
+npm start           # 构建后的独立 Node.js 服务
+npm test
+npm run test:browser # 先启动 Vite；首次使用 npx playwright install chromium
+```
 
-`node tests/puzzle-ui.browser.mjs` 检查全部 13 款游戏的基本操作，并回归管道连续旋转、点灯重开模式、聪明格每日挑战键盘和跨游戏进入每日挑战。此脚本仅允许连接本地测试服务，不提交线上成绩；也可通过导出的测试函数在 CUA 浏览器中运行。
+MySQL 集成回归必须使用隔离库 `gejian_test`，在对应环境变量下运行 `npm run test:api`。脚本拒绝在正式库运行。GitHub Actions 自动执行单元、MySQL 集成、构建和浏览器测试，不再发布 Pages。
+
+## 线上部署与运维
+
+服务器目录 `/opt/gejian`，Compose 项目名 `gejian`，与现有机器人服务隔离。
+
+- `app`：Node.js 24，非 root、只读容器，宿主仅监听 `127.0.0.1:3100`。
+- `db`：MySQL 8.4，仅 Compose 内网可达，没有映射公网或宿主 3306 端口。
+- 数据落盘到 `/opt/gejian/data/mysql`；密码在 `/opt/gejian/.env`，权限 0600。
+- 历史密码参数位于 `/opt/gejian/private/hash-config.json`，只读挂载；备份不得置于 `public/` 或提交 Git。
+- Nginx 配置 `/etc/nginx/sites-available/gejian`，证书由 Certbot 管理。Cloudflare 真实 IP 白名单仅应用于这个站点，避免所有访问者共用限流额度。
+
+更新源码前备份，随后构建和启动：
+
+```sh
+cd /opt/gejian
+sudo bash deploy/backup.sh
+sudo docker compose build app
+sudo docker compose up -d app
+sudo docker compose ps
+curl --fail http://127.0.0.1:3100/api/health
+```
+
+启动会执行尚未应用的 SQL 迁移。单机更新期间可能有几秒中断；后续不兼容数据库变更需要先制定回滚方案。不要执行 `docker compose down -v` 或删除 `data/`。
+
+手动备份：`sudo bash /opt/gejian/deploy/backup.sh`，结果写入 `backups/gejian-时间.sql.gz`，仅服务器管理员可读。恢复到**空的隔离数据库**验证后，再计划正式恢复；不要直接覆盖正在使用的正式库。账号密码参数与 `.env` 也必须通过受控方式保留。建议额外配置异机备份。
+
+## 账号与成绩迁移
+
+2026-10-27 从旧 Firebase 项目迁入账号和排行榜，迁入 17 个账号、110 条成绩，保留 UID、昵称、成绩、题目种子及时间；无 `game` 的历史记录归为数织。导入在事务中执行并逐条校验，可重复执行而不覆盖新密码或成绩。
+
+历史导出包含同一邮箱的两个不同 UID。两者分别保留，优先验证最近活跃账号，必要时匹配另一原密码；成绩不合并。新注册邮箱唯一。旧密码首次成功登录后自动升级为本站 scrypt 摘要，随后不再使用该账号的旧哈希。
+
+- `scripts/export-firebase.cjs`：一次性管理员导出，需要显式授权及本机已有 Firebase CLI 登录；仅导出到受限私有目录，不输出令牌或密码材料。
+- `scripts/retire-firebase.cjs`：经明确授权后停用旧服务，先保存恢复配置，保留全部旧数据。
+- `scripts/import-firebase.mjs`：服务端事务导入；需数据库环境变量和 `IMPORT_DIR`。
+- 旧 Firebase 数据保留作迁移回溯；经明确授权，旧邮箱认证和 Firestore 客户端访问已停用，恢复配置保存在服务器私有目录。前端和后端正常运行均不连接 Firebase。
+- GitHub Pages 旧域名和新域名的浏览器本地存储互不共享。本机战绩、主题、每日打卡不会自动跨域迁移，云端账号和排行榜不受此限制。
+
+账号会话使用随机 HttpOnly / Secure / SameSite Cookie，数据库只保存会话令牌哈希。写 API 校验来源和自定义请求头，登录限流，SQL 使用参数绑定。昵称和用户 ID 由服务端确定，成绩提交通过数据库唯一约束防止并发重复。
+
+排行榜仍是客户端上报：服务端验证类型、范围、游戏规格与身份，但没有重放整局进行防作弊验证。目前没有邮箱验证、找回密码或社交登录功能，与旧站的邮箱密码登录范围一致。
 
 ## 游戏选择
 
@@ -65,26 +126,10 @@ npm test
 
 ## 攻略页
 
-`dist/guide/` 提供全部 13 款游戏的静态攻略页（规则 + 技巧），由 `node scripts/build-guides.mjs` 生成，利于搜索引擎收录；游戏内「怎么玩」弹窗有对应链接。
+`public/guide/` 提供全部 13 款游戏的静态攻略页（规则 + 技巧），由 `node scripts/build-guides.mjs` 生成，利于搜索引擎收录；游戏内「怎么玩」弹窗有对应链接。
 
 ## 动画反馈
 
 所有游戏提供短时操作反馈：2048 方块滑动与合并、数织填色、数独输入、扫雷展开波纹，以及数回／数桥线条绘制和回收。重开或切换游戏会取消未完成的动画。
 
 管道、点灯、数墙、聪明格使用保留格子节点的更新方式，颜色过渡和键盘焦点不会随操作丢失。管道有 90° 旋转及接通高亮；点灯沿新照亮的格子扩散暖色光晕；数墙岛屿完成、聪明格算式满足时有短暂提示，新增冲突轻微抖动。共享棋盘边框与半透明计分卡适配深浅主题，系统开启「减少动态效果」时关闭这些动效。
-
-## GitHub Pages
-
-现有 `.github/workflows/pages.yml` 会在推送到 `main` / `master` 时发布 `dist/`。仓库 Settings → Pages 的来源应为 GitHub Actions。所有资源使用相对路径，支持仓库子路径部署。
-
-游戏本体无需 Firebase 即可运行。登录与排行榜沿用已有 Firebase 项目，新游戏排行榜需要另行发布仓库中的 `firestore.rules`（Pages 工作流不会发布 Firebase 规则）。新增规格使用独立编码，继续兼容现有查询、索引和旧成绩。
-
-规则已通过 Firebase 云端编译检查及本地模拟器测试。排行榜为客户端上报成绩，不具备服务端防作弊验证。规则和新增索引需通过 `firebase deploy --only firestore:rules,firestore:indexes` 单独发布，GitHub Pages 只负责前端。
-
-## 成绩上传回归
-
-- `npm test`：检查各游戏排序、格式、毫秒精度、成绩字段校验，以及四款新游戏的出题器与检查器。
-- `node tests/scores.browser.cjs`：在 Playwright 环境运行真实页面配合内存 Firebase SDK，覆盖登录后上传、重复提交、失败重试、重新打开成绩，以及旧请求不覆盖新一局。不会写入线上成绩。
-- `firebase emulators:exec --only firestore --project demo-gejian-score-tests --config firebase.test.json "python3 tests/firestore_rules.py"`：本地验证十三款游戏成绩权限、必填字段、类型、范围、身份、重放和查询限额。
-
-训练排行榜规格使用独立编码：反应测试 305、瞄准训练 330、合成大西瓜 450、管道 505/507、点灯 607/610、数墙 707/710、聪明格 804/806。新增 `averageMs`（两款训练）、`hits` / `shots`（仅瞄准）及 `points`（2048 / 合成大西瓜）字段按游戏校验，旧游戏数据和排名保持兼容。

@@ -55,7 +55,7 @@ async function environment(t) {
     timer: { start(options) { state.timerOptions = options; }, stop() {}, reset() {}, elapsed: () => 3 },
     closeVictory() {}, setTitle() {}, setPuzzleNumber() {}, setStatus() {}, reportWin: win => state.wins.push(win),
   };
-  const { reaction } = await import(`../dist/js/games/training.js?test=${++moduleId}`);
+  const { reaction } = await import(`../src/games/training.js?test=${++moduleId}`);
   reaction.mount(ctx);
   const surface = ctx.els.gameRoot.querySelector('.reaction-surface');
   const rounds = () => ctx.els.controlPanel.querySelector('#reactionRounds').textContent;

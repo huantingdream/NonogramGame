@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { move2048, canMove2048, generateLoop, checkLoop, loopEdges, generateBridges, checkBridges, crosses } from '../dist/js/games/puzzle-logic.js';
-import { makeSeededRandom } from '../dist/js/core/utils.js';
+import { move2048, canMove2048, generateLoop, checkLoop, loopEdges, generateBridges, checkBridges, crosses } from '../src/games/puzzle-logic.js';
+import { makeSeededRandom } from '../src/core/utils.js';
 const row = values => [...values, ...Array(12).fill(0)];
 test('2048: each tile merges once; move is pure and scores correctly', () => {
   const board = row([2,2,2,2]);
@@ -44,7 +44,7 @@ test('bridges reject disconnected satisfied islands, crossings, and more than tw
 });
 
 test('2048 animation tracks preserve every tile and point to the computed destinations', async () => {
-  const { trace2048 } = await import('../dist/js/games/puzzle-logic.js');
+  const { trace2048 } = await import('../src/games/puzzle-logic.js');
   const input = [2,2,2,2,4,0,4,8,0,2,0,2,8,8,16,0];
   for (const direction of ['left','right','up','down']) {
     const result = trace2048(input,direction);

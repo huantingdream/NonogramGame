@@ -1,0 +1,14 @@
+.git
+node_modules
+dist
+.env*
+private
+backups
+*.png
+*.sql*
+test-results
+playwright-report
+
+**/._*
+data
+source.tar.gz

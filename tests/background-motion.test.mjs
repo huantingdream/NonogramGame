@@ -23,7 +23,7 @@ function environment(saved = null) {
 }
 
 async function loadModule(name) {
-  return import(`../dist/js/core/background-motion.js?test=${name}-${Date.now()}-${Math.random()}`);
+  return import(`../src/core/background-motion.js?test=${name}-${Date.now()}-${Math.random()}`);
 }
 
 test('reaction pauses background motion by default and restores it in other games', async () => {

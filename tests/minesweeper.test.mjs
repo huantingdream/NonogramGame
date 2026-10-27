@@ -6,7 +6,7 @@ globalThis.window = {
   matchMedia: () => ({ matches: true, addEventListener() {}, removeEventListener() {} })
 };
 
-const { __testing } = await import("../dist/js/games/minesweeper.js");
+const { __testing } = await import("../src/games/minesweeper.js");
 const { state, presets, generateField, countForcedGuesses, placeMines } = __testing;
 
 let failures = 0;

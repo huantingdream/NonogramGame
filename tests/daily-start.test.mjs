@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { randomSeed, setNextSeed } from '../dist/js/core/utils.js';
+import { randomSeed, setNextSeed } from '../src/core/utils.js';
 
 let serial = 0;
 async function setup(t, onSelect) {
@@ -20,7 +20,7 @@ async function setup(t, onSelect) {
     configure: config => calls.push({ id, config }),
     newGame: () => calls.push({ id, seed: randomSeed() })
   }));
-  const daily = await import(`../dist/js/core/daily.js?test=${++serial}`);
+  const daily = await import(`../src/core/daily.js?test=${++serial}`);
   daily.initDaily({ games, onSelect });
   return { daily, calls };
 }

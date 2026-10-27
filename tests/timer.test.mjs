@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createTimer } from '../dist/js/core/timer.js';
+import { createTimer } from '../src/core/timer.js';
 
 test('silent timer avoids periodic UI work but preserves elapsed time on stop', t => {
   let now = 1000, intervals = 0;
