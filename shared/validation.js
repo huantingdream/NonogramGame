@@ -27,3 +27,21 @@ export const scoreSchema = z.object({
 const email = z.string().trim().toLowerCase().email().max(254);
 export const loginSchema = z.object({ email, password: z.string().min(1).max(128), nickname: z.string().optional() }).strict();
 export const registerSchema = z.object({ email, password: z.string().min(8).max(128), nickname: z.string().trim().min(1).max(20) }).strict();
+
+// Personal history includes failed/zero-second rounds and old browser records without puzzle seeds.
+export const playSchema = z.object({
+  id: z.string().uuid(), game: z.enum(Object.keys(configurations)), size: z.number().int(),
+  difficulty: z.enum(['easy','normal','hard']), elapsedSeconds: z.number().int().min(0).max(86400),
+  gameOver: z.boolean(), ts: z.number().int().min(946684800000).max(8640000000000000),
+  averageMs: z.number().int().nullable().default(null), hits: z.number().int().nullable().default(null),
+  shots: z.number().int().nullable().default(null), points: z.number().int().nullable().default(null)
+}).strict().superRefine((play, ctx) => {
+  const candidate = { game: play.game, size: play.size, difficulty: play.difficulty,
+    elapsedSeconds: Math.max(1, play.elapsedSeconds), puzzleId: 0, puzzleSeed: 0 };
+  for (const key of ['averageMs','hits','shots','points']) if (play[key] !== null) candidate[key] = play[key];
+  if (!scoreSchema.safeParse(candidate).success) ctx.addIssue({code: 'custom', message: '战绩数据无效'});
+  if (play.ts > Date.now() + 86400000) ctx.addIssue({code: 'custom', message: '战绩时间无效'});
+});
+export const playBatchSchema = z.object({
+  accountId: z.string().min(1).max(128), plays: z.array(playSchema).min(1).max(20)
+}).strict();

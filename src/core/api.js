@@ -21,6 +21,8 @@ const api = {
   async register(values) { const data = await request('/auth/register', { method: 'POST', body: JSON.stringify(values) }); notify(data.user); return data.user; },
   async login(values) { const data = await request('/auth/login', { method: 'POST', body: JSON.stringify(values) }); notify(data.user); return data.user; },
   async logout() { await request('/auth/logout', { method: 'POST', body: '{}' }); notify(null); },
+  savePlays: (accountId, plays) => request('/me/plays', { method: 'POST', body: JSON.stringify({accountId, plays}) }),
+  loadStats: () => request('/me/stats'),
   submitScore: score => request('/scores', { method: 'POST', body: JSON.stringify(score) }),
   loadLeaderboard: filter => request(`/leaderboard?${new URLSearchParams(filter)}`).then(data => data.scores)
 };

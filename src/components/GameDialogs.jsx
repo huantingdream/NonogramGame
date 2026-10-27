@@ -37,16 +37,5 @@ export const GameDialogs = memo(function GameDialogs() { return <>
       <p className="daily-tip">所有玩家今天的题目完全相同，比比谁更快。每天完成任意一款即可延续打卡。</p>
       <div className="daily-list" id="dailyList"></div>
     </dialog>
-    <dialog className="modal stats-modal" id="statsModal" aria-labelledby="statsTitle">
-      <button className="modal-close" type="button" data-close-stats aria-label="关闭">×</button>
-      <span className="modal-kicker">MY RECORDS</span>
-      <h2 id="statsTitle">我的战绩</h2>
-      <div className="stats-overview" id="statsOverview"></div>
-      <h3 className="stats-section-title">各游戏最佳</h3>
-      <div className="stats-best-list" id="statsBestList"></div>
-      <h3 className="stats-section-title">最近成绩</h3>
-      <div className="stats-recent-list" id="statsRecentList"></div>
-      <p className="network-hint">战绩保存在本机浏览器中，清空浏览器数据会丢失。</p>
-    </dialog>
 <div className="toast" id="toast" role="status" aria-live="polite"></div>
 </>; });

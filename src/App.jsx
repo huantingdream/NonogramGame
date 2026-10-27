@@ -3,6 +3,7 @@ import { GameBoard } from './components/GameBoard.jsx';
 import { GameDialogs } from './components/GameDialogs.jsx';
 import { GamePicker } from './components/GamePicker.jsx';
 import { Account, AccountButton } from './components/Account.jsx';
+import { Stats } from './components/Stats.jsx';
 import { Leaderboard } from './components/Leaderboard.jsx';
 export default function App() {
   const { game, selectGame, getActiveGame } = useGameRuntime();
@@ -12,7 +13,7 @@ export default function App() {
       <GamePicker game={game} selectGame={selectGame}/>
       <div className="topbar-actions">
         <button className="topbar-button" id="dailyButton"><span className="icon icon-daily" aria-hidden="true"/> 每日挑战</button>
-        <button className="topbar-button" id="statsButton"><span className="icon icon-stats" aria-hidden="true"/> 战绩</button>
+        <Stats/>
         <Leaderboard getActiveGame={getActiveGame}/><AccountButton/>
         <button className="topbar-button icon-only" id="backgroundMotionButton" aria-label="关闭背景动效" aria-pressed="true"><span className="motion-toggle-icon" aria-hidden="true"/></button>
         <button className="topbar-button icon-only" id="soundButton" aria-label="关闭音效" aria-pressed="true"><span className="icon icon-sound" aria-hidden="true"/></button>

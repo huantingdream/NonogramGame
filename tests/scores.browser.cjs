@@ -22,6 +22,8 @@ const assert = require('node:assert/strict');
         if(pathname==='/api/auth/me') return {body:{user:window.__auth.currentUser}};
         if(pathname==='/api/auth/login'||pathname==='/api/auth/register') {window.__auth.currentUser=user;return {body:{user}};}
         if(pathname==='/api/auth/logout') {window.__auth.currentUser=null;return {body:{ok:true}};}
+        if(pathname==='/api/me/plays') return {body:{accountId:body.accountId,savedIds:body.plays.map(p=>p.id)}};
+        if(pathname==='/api/me/stats') return {body:{accountId:user.uid,summary:{total:0,wins:0,totalSeconds:0},best:[],recent:[]}};
         if(pathname==='/api/scores') {
           const id=[body.game,body.size,body.difficulty,body.puzzleSeed].join('_');
           if(window.__docs[id])return {body:{duplicate:true}};

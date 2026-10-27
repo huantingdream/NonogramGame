@@ -424,6 +424,7 @@ function gameOver(won) {
   } else {
     renderPlayerState();
     ctx.setStatus("incorrect", "踩雷");
+    ctx.recordResult?.({size: rows * cols, difficulty: state.preset, elapsedSeconds: ctx.timer.elapsed()}, true);
     showToast("踩到雷了，点「生成新题目」再来一局");
   }
 }

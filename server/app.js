@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import { registerPersonalStats } from './personal-stats.js';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
 import helmet from '@fastify/helmet';
@@ -62,6 +63,7 @@ export async function buildApp({ pool, origin = 'http://localhost:7100', secure 
     return parsed.data;
   }
   const authLimits = limits ? { config: { rateLimit: { max: 20, timeWindow: '15 minutes' } } } : {};
+  registerPersonalStats(app, {pool, requireUser, parse, fail});
   app.get('/api/health', async () => { await pool.query('SELECT 1'); return { status: 'ok' }; });
   app.get('/api/auth/me', async request => { const user = await sessionUser(request); return { user: user ? publicUser(user) : null }; });
   app.post('/api/auth/register', authLimits, async (request, reply) => {

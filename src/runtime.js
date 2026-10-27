@@ -11,7 +11,7 @@ import { animate, enterBoard, cancelMotion } from "./core/motion.js";
 import { initTheme } from "./core/theme.js";
 import { initBackgroundMotion, setBackgroundMotionContext } from "./core/background-motion.js";
 import { initSound, playSound } from "./core/sound.js";
-import { initStats, recordPlay } from "./core/stats.js";
+import { recordPlay } from "./core/stats.js";
 import { initDaily, recordIfDaily } from "./core/daily.js";
 
 import { GAMES } from './games/registry.js';
@@ -81,6 +81,7 @@ function buildGameContext(game) {
     },
     toast: showToast,
     closeVictory,
+    recordResult(score, gameOver) { recordPlay({...score, game: game.id}, gameOver); },
     reportWin({ summary, score, gameOver = false }) {
       setStatus(gameOver ? "incorrect" : "correct", gameOver ? "本局结束" : null);
       if (!gameOver) animate(document.querySelector('.board-card'), [
@@ -176,7 +177,7 @@ initVictory({
   onNext: () => currentGame?.newGame(),
   games: GAMES
 });
-initStats({ games: GAMES });
+
 initDaily({ games: GAMES, onSelect: mountGame });
 
 

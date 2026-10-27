@@ -14,7 +14,7 @@
     "start": "node --env-file-if-exists=.env server/index.js",
     "test": "node --test tests/*.test.mjs",
     "test:api": "node --env-file-if-exists=.env --test tests/api.integration.mjs",
-    "test:browser": "node tests/puzzle-ui.browser.mjs && node tests/scores.browser.cjs",
+    "test:browser": "node tests/puzzle-ui.browser.mjs && node tests/scores.browser.cjs && node tests/stats.browser.mjs",
     "db:migrate": "node --env-file-if-exists=.env server/migrate.js"
   },
   "dependencies": {
