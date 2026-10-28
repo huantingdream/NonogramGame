@@ -11,5 +11,6 @@ import kenken from "./kenken.js";
 
 import { reaction, aim } from "./training.js";
 import watermelon from "./watermelon.js";
+import tetris from "./tetris.js";
 
-export const GAMES = [nonogram, sudoku, kenken, minesweeper, twenty48, slitherlink, hashi, nurikabe, akari, netwalk, watermelon, reaction, aim];
+export const GAMES = [nonogram, sudoku, kenken, minesweeper, tetris, twenty48, slitherlink, hashi, nurikabe, akari, netwalk, watermelon, reaction, aim];

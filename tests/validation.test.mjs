@@ -8,7 +8,7 @@ test('server score schema rejects forged identity, malformed metrics and invalid
   const s={...base,game,size,difficulty:['nonogram','sudoku','minesweeper'].includes(game)?'easy':sizes.length===2&&size===sizes[0]?'easy':'normal'};
   if(game==='reaction')s.averageMs=220;
   if(game==='aim')Object.assign(s,{hits:2,shots:3,averageMs:400});
-  if(['2048','watermelon'].includes(game))s.points=100;
+  if(['2048','watermelon','tetris'].includes(game))s.points=100;
   assert.equal(scoreSchema.safeParse(s).success,true,JSON.stringify(s));
  }
 });

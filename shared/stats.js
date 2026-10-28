@@ -6,7 +6,7 @@ export function summarizePlays(plays) {
   for (const p of plays) {
     result.summary.total++; result.summary.totalSeconds += p.elapsedSeconds;
     if (!p.gameOver) result.summary.wins++;
-    if (p.gameOver && !['2048','watermelon'].includes(p.game)) continue;
+    if (p.gameOver && !['2048','watermelon','tetris'].includes(p.game)) continue;
     const old = best.get(p.game), completions = (old?.completions || 0) + 1;
     const compare = (a,b) => {
       for (const [field,direction] of scoreOrder(p.game)) {

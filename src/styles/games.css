@@ -278,6 +278,57 @@
 .aim-burst { position:absolute;width:36px;height:36px;translate:-50% -50%;border:2px solid var(--lime);border-radius:50%;pointer-events:none; }
 .aim-burst.miss { border-color:#ff9d9d; width:20px;height:20px; }
 
+/* 俄罗斯方块 */
+.tetris-stage { display:grid; grid-template-columns:minmax(0, 280px) 88px; gap:18px; width:min(386px, calc(100vw - 64px)); margin:auto; align-items:start; }
+.tetris-well { position:relative; min-width:0; border:1px solid var(--soft-line); border-radius:12px; overflow:hidden; background:var(--puzzle-frame); padding:5px; box-shadow:0 10px 28px color-mix(in srgb, var(--blue) 10%, transparent); }
+.tetris-grid { display:grid; grid-template-columns:repeat(10, 1fr); aspect-ratio:1/2; gap:1px; outline-offset:-3px; }
+.tetris-cell { display:block; min-width:0; min-height:0; border-radius:2px; background:color-mix(in srgb, var(--blue) 5%, transparent); }
+.tetris-cell[data-piece="I"] { --block:#39b7cc; }
+.tetris-cell[data-piece="O"] { --block:#e6b83e; }
+.tetris-cell[data-piece="T"] { --block:#a17be4; }
+.tetris-cell[data-piece="S"] { --block:#44b68b; }
+.tetris-cell[data-piece="Z"] { --block:#ef7589; }
+.tetris-cell[data-piece="J"] { --block:#6088ed; }
+.tetris-cell[data-piece="L"] { --block:#ed9d51; }
+.tetris-cell[data-piece]:not([data-piece=""]) { background:var(--block); box-shadow:inset 0 2px 0 #ffffff50, inset 0 -2px 0 #0000001c; border:1px solid color-mix(in srgb, var(--block) 80%, #17253d); }
+.tetris-cell[data-kind="ghost"] { background:color-mix(in srgb, var(--block) 12%, transparent) !important; border:1px dashed var(--block) !important; box-shadow:none !important; }
+.tetris-overlay { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:16px; text-align:center; background:color-mix(in srgb, var(--white) 89%, transparent); backdrop-filter:blur(5px); }
+.tetris-overlay[hidden] { display:none; }
+.tetris-overlay strong { color:var(--ink); font-size:clamp(18px, 3vw, 26px); }
+.tetris-overlay p { color:var(--muted); font-size:.78rem; line-height:1.8; }
+.tetris-overlay .primary-button { width:auto; min-width:120px; margin-top:12px; }
+.tetris-sidebar section { padding:10px; margin-bottom:14px; border-radius:12px; background:var(--blue-soft); }
+.tetris-sidebar h3 { margin:0 0 12px; font-size:.75rem; color:var(--muted); white-space:nowrap; }
+.tetris-sidebar kbd { font:inherit; opacity:.65; margin-left:4px; }
+.tetris-preview { display:grid; grid-template-columns:repeat(var(--piece-size), 1fr); gap:2px; width:calc(var(--piece-size) * 16px); max-width:100%; aspect-ratio:1; margin:0 auto 12px; }
+.tetris-preview:last-child { margin-bottom:0; }
+.tetris-preview .tetris-cell:not([data-piece]) { background:none; }
+#tetrisHold { min-height:54px; }
+#tetrisHold.used { opacity:.4; }
+.tetris-empty { display:grid; place-items:center; min-height:54px; color:var(--muted); }
+#tetrisFeedback { min-height:30px; color:var(--blue); font-size:.8rem; line-height:1.6; }
+.tetris-stats { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0 24px; }
+.tetris-stats > div { padding:12px 14px; border:1px solid #ffffff2e; border-radius:14px; background:#ffffff17; }
+.tetris-stats span { display:block; color:#dce5ff; font-size:.78rem; margin-bottom:6px; }
+.tetris-stats strong { font-size:24px; color:#f7f9ff; font-variant-numeric:tabular-nums; }
+.tetris-stats small { margin-left:6px; color:#dce5ff; }
+.tetris-controls { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; width:100%; }
+.tetris-controls button { width:auto; flex:1; min-height:44px; min-width:44px; touch-action:none; user-select:none; }
+.board-scroll:has(.tetris-stage) { max-height:none; }
+@media(max-width:620px) {
+  .tetris-stage { grid-template-columns:minmax(0, 1fr) 64px; gap:10px; width:min(340px, calc(100vw - 64px), calc(24dvh + 74px)); }
+  .tetris-sidebar section { padding:8px; }
+  .tetris-sidebar h3 { font-size:.65rem; }
+  .tetris-sidebar kbd { display:none; }
+  .tetris-controls { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; }
+  .tetris-controls button { padding:8px 4px; min-width:0; }
+  .tetris-controls [data-tetris="drop"] { grid-column:span 2; }
+  .tetris-stats { margin:10px 0 14px; gap:8px; }
+  .tetris-stats > div { padding:8px 12px; }
+  .tetris-stats span { display:inline; margin-right:10px; }
+  .tetris-stats strong { font-size:20px; }
+}
+
 /* 合成大西瓜 */
 .watermelon-stage { width:min(400px, calc(100vw - 76px)); margin:auto; }
 .watermelon-stage canvas {

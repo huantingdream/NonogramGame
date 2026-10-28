@@ -39,10 +39,10 @@ export function registerPersonalStats(app, {pool, requireUser, parse, fail}) {
             CASE WHEN game='reaction' THEN average_ms END ASC,
             CASE WHEN game='aim' THEN hits END DESC,
             CASE WHEN game='aim' THEN shots END ASC,
-            CASE WHEN game IN ('2048','watermelon') THEN points END DESC,
+            CASE WHEN game IN ('2048','watermelon','tetris') THEN points END DESC,
             CASE WHEN game NOT IN ('reaction','aim') THEN elapsed_seconds END ASC,
             played_at ASC,id ASC) AS position
-        FROM personal_plays WHERE user_id=? AND (game_over=FALSE OR game IN ('2048','watermelon'))
+        FROM personal_plays WHERE user_id=? AND (game_over=FALSE OR game IN ('2048','watermelon','tetris'))
       ) ranked WHERE position=1`, [user.id]);
       await connection.commit();
       return {accountId: user.id, summary: Object.fromEntries(Object.entries(summary).map(([k,v]) => [k,Number(v)])),

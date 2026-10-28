@@ -38,7 +38,7 @@ export function Stats() {
       <h3 className="stats-section-title">各游戏最佳</h3>
       <div className="stats-best-list" id="statsBestList">{state.best.length ? GAMES.filter(g => state.best.some(p => p.game === g.id)).map(g => {
         const play = state.best.find(p => p.game === g.id);
-        return <div key={g.id}>{icon(g.id)} {g.name}<small>{label(play)} · {g.id === '2048' || g.id === 'watermelon' ? '记录' : '完成'} {play.completions} 局</small><strong>{scoreLabel(play)}</strong></div>;
+        return <div key={g.id}>{icon(g.id)} {g.name}<small>{label(play)} · {['2048', 'watermelon', 'tetris'].includes(g.id) ? '记录' : '完成'} {play.completions} 局</small><strong>{scoreLabel(play)}</strong></div>;
       }) : <p className="stats-empty">还没有完成过任何一局，去玩一把吧。</p>}</div>
       <h3 className="stats-section-title">最近 20 条成绩</h3>
       <div className="stats-recent-list" id="statsRecentList">{state.recent.length ? state.recent.map(play => <div key={play.id}>{icon(play.game)} {gameName(play.game)}<small>{label(play)} · {new Date(play.ts).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}{play.gameOver ? ' · 未通关' : ''}</small><strong>{scoreLabel(play)}</strong></div>) : <p className="stats-empty">暂无记录。</p>}</div>

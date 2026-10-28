@@ -32,7 +32,7 @@ const assert = require('node:assert/strict');
           window.__docs[id]={...body,nickname:'Tester',uid:'tester',createdAt:Date.now()};return {body:{duplicate:false}};
         }
         if(pathname==='/api/leaderboard') {
-          const order=query.game==='reaction'?[['averageMs','asc'],['createdAt','asc']]:query.game==='aim'?[['hits','desc'],['shots','asc'],['createdAt','asc']]:['2048','watermelon'].includes(query.game)?[['points','desc'],['elapsedSeconds','asc'],['createdAt','asc']]:[['elapsedSeconds','asc'],['createdAt','asc']];
+          const order=query.game==='reaction'?[['averageMs','asc'],['createdAt','asc']]:query.game==='aim'?[['hits','desc'],['shots','asc'],['createdAt','asc']]:['2048','watermelon','tetris'].includes(query.game)?[['points','desc'],['elapsedSeconds','asc'],['createdAt','asc']]:[['elapsedSeconds','asc'],['createdAt','asc']];
           window.__queries.push(order.map(args=>({kind:'order',args})));
           let rows=Object.values(window.__docs).filter(s=>s.game===query.game&&s.size===Number(query.size)&&s.difficulty===query.difficulty);
           rows.sort((a,b)=>{for(const [key,direction] of order){const diff=a[key]-b[key];if(diff)return direction==='desc'?-diff:diff;}return 0;});

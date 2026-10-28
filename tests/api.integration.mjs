@@ -45,6 +45,9 @@ test('real MySQL sessions, ownership, validation, concurrency, leaderboard order
  for(const [seed,points,elapsedSeconds] of [[301,200,40],[302,200,20],[303,400,60]]) await post('/api/scores',{...base,game:'2048',size:16,difficulty:'normal',puzzleSeed:seed,points,elapsedSeconds});
  rows=(await get('/api/leaderboard?game=2048&size=16&difficulty=normal')).json().scores;
  assert.deepEqual(rows.map(r=>[r.points,r.elapsedSeconds]),[[400,60],[200,20],[200,40]]);
+ for(const [seed,points,elapsedSeconds] of [[401,800,90],[402,800,60],[403,1200,120]]) assert.equal((await post('/api/scores',{...base,game:'tetris',size:200,difficulty:'normal',puzzleSeed:seed,points,elapsedSeconds})).statusCode,200);
+ rows=(await get('/api/leaderboard?game=tetris&size=200&difficulty=normal')).json().scores;
+ assert.deepEqual(rows.map(r=>[r.points,r.elapsedSeconds]),[[1200,120],[800,60],[800,90]]);
  // Personal history is private, independent of public leaderboard submissions, and not capped at 300.
  assert.equal((await get('/api/me/stats')).json().summary.total,0);
  const play={id:randomUUID(),game:'nonogram',size:5,difficulty:'easy',elapsedSeconds:10,gameOver:false,ts:Date.now()};
@@ -65,13 +68,16 @@ test('real MySQL sessions, ownership, validation, concurrency, leaderboard order
  assert.equal((await get('/api/me/stats')).json().recent[0].elapsedSeconds,10,'same ID cannot mutate an existing round');
  await post('/api/me/plays',{...batch,plays:[{...play,id:randomUUID(),game:'watermelon',size:450,difficulty:'normal',points:450,gameOver:true}]});
  assert.equal((await get('/api/me/stats')).json().best.find(p=>p.game==='watermelon').points,450);
+ for (const [points,elapsedSeconds] of [[800,60],[1200,90]]) assert.equal((await post('/api/me/plays',{...batch,plays:[{...play,id:randomUUID(),game:'tetris',size:200,difficulty:'normal',points,elapsedSeconds,gameOver:true}]})).statusCode,200);
+ const tetrisBest=(await get('/api/me/stats')).json().best.find(p=>p.game==='tetris');
+ assert.equal(tetrisBest.points,1200);assert.equal(tetrisBest.completions,2);
  const second=await post('/api/auth/register',{email:`stats-other-${randomUUID()}@example.test`,password,nickname:'另一个账号'},{cookie:''});
  users.push(second.json().user.uid);const otherCookie=second.headers['set-cookie'].split(';')[0];
  assert.equal((await app.inject({url:'/api/me/stats',headers:{cookie:otherCookie}})).json().summary.total,0);
  assert.equal((await post('/api/me/plays',batch,{cookie:otherCookie})).statusCode,409,'queued A data cannot be written using B cookie');
  assert.equal((await app.inject({url:'/api/me/stats',headers:{cookie:otherCookie}})).json().summary.total,0);
  const anotherLogin=await post('/api/auth/login',{email,password},{cookie:''});
- assert.equal((await app.inject({url:'/api/me/stats',headers:{cookie:anotherLogin.headers['set-cookie'].split(';')[0]}})).json().summary.total,323,'another device sees the same account history');
+ assert.equal((await app.inject({url:'/api/me/stats',headers:{cookie:anotherLogin.headers['set-cookie'].split(';')[0]}})).json().summary.total,325,'another device sees the same account history');
  const oldCookie=cookie;
  assert.equal((await post('/api/auth/logout',{})).statusCode,200);
  assert.equal((await get('/api/auth/me')).json().user,null);
